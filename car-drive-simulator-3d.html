@@ -1,0 +1,82 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Car Drive Simulator 3D</title>
+  <style>
+    html,body { height:100%; margin:0; background:#111; color:#ddd; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; }
+    canvas { display:block; width:100vw; height:100vh; }
+    .top-link {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 10;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #d84b4b;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .menu {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.52);
+    }
+    .menu-card {
+      min-width: 320px;
+      max-width: 90vw;
+      padding: 24px;
+      border-radius: 14px;
+      background: rgba(20,20,20,0.95);
+      border: 1px solid #3a3a3a;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      text-align: center; 
+    }
+    .menu-title {
+      margin: 0 0 16px;
+      font-size: 34px;
+      color: #f2f2f2;
+      letter-spacing: 0.5px;
+    }
+    .menu-buttons {
+      display: grid;
+      gap: 10px;
+    }
+    .menu-btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2a2a2a;
+      color: #f2f2f2;
+    }
+    .menu-btn:hover { background: #373737; }
+    .menu-btn.start { background: #1f6feb; }
+    .menu-btn.start:hover { background: #2b7ff7; }
+  </style>
+</head>
+<body>
+  <a class="top-link" href="games.html">Exit</a>
+  <div id="mainMenu" class="menu">
+    <div class="menu-card">
+      <h1 class="menu-title">Car Drive Simulator</h1>
+      <div class="menu-buttons">
+        <button id="startBtn" class="menu-btn start" type="button">Start</button>
+        <button id="tasksBtn" class="menu-btn" type="button">Tasks</button>
+      </div>
+    </div>
+  </div>
+  <canvas id="game"></canvas>
+  <script src="car-drive-simulator-3d.js"></script>
+</body>
+</html>

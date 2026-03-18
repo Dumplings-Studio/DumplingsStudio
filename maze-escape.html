@@ -1,0 +1,13 @@
+﻿<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg"><title>Maze Escape</title><style>body{margin:0;background:#0a1018;color:#e6efff;font-family:Segoe UI,Tahoma,sans-serif;display:grid;place-items:center;height:100vh}.wrap{width:min(95vw,760px)}canvas{width:100%;aspect-ratio:1/1;display:block;background:#0d1524;border:1px solid #2f4469;border-radius:12px}.hud{display:flex;justify-content:space-between;margin:8px 2px}.exit{position:fixed;right:12px;top:12px;background:#d84b4b;color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700}</style></head><body><a class="exit" href="games.html">Exit</a><div class="wrap"><h1>Maze Escape</h1><div class="hud"><span>Level: <b id="lvl">1</b></span><span>Move with Arrow keys or WASD</span></div><canvas id="mz" width="720" height="720"></canvas></div><script>
+const c=mz,x=c.getContext('2d'),lvlEl=document.getElementById('lvl');const N=18,S=40;let grid=[],player={x:0,y:0},goal={x:N-1,y:N-1},level=1;const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+function make(){grid=Array.from({length:N},()=>Array.from({length:N},()=>1));const st=[[0,0]];grid[0][0]=0;while(st.length){const [cx,cy]=st[st.length-1];const next=[];for(const[dX,dY] of dirs){const nx=cx+dX*2,ny=cy+dY*2;if(nx>=0&&ny>=0&&nx<N&&ny<N&&grid[ny][nx])next.push([nx,ny,dX,dY]);}if(!next.length){st.pop();continue;}const [nx,ny,dX,dY]=next[Math.floor(Math.random()*next.length)];grid[cy+dY][cx+dX]=0;grid[ny][nx]=0;st.push([nx,ny]);}
+for(let i=0;i<Math.max(8,level*3);i++){const rx=Math.floor(Math.random()*N),ry=Math.floor(Math.random()*N);if((rx||ry)&&(rx!==N-1||ry!==N-1))grid[ry][rx]=0;}player={x:0,y:0};goal={x:N-1,y:N-1};if(grid[goal.y][goal.x])grid[goal.y][goal.x]=0;}
+function move(dx,dy){const nx=player.x+dx,ny=player.y+dy;if(nx<0||ny<0||nx>=N||ny>=N||grid[ny][nx])return;player.x=nx;player.y=ny;if(player.x===goal.x&&player.y===goal.y){level++;lvlEl.textContent=level;make();}}
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='arrowup'||k==='w')move(0,-1);if(k==='arrowdown'||k==='s')move(0,1);if(k==='arrowleft'||k==='a')move(-1,0);if(k==='arrowright'||k==='d')move(1,0);draw();});
+function draw(){x.fillStyle='#0b1220';x.fillRect(0,0,c.width,c.height);for(let r=0;r<N;r++)for(let col=0;col<N;col++){x.fillStyle=grid[r][col]?'#253757':'#101b2f';x.fillRect(col*S,r*S,S-1,S-1);}x.fillStyle='#ffd166';x.fillRect(goal.x*S+8,goal.y*S+8,S-16,S-16);x.fillStyle='#7df9c6';x.beginPath();x.arc(player.x*S+S/2,player.y*S+S/2,12,0,Math.PI*2);x.fill();}
+make();draw();
+</script></body></html>
+
+

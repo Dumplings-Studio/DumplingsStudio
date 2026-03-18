@@ -1,0 +1,217 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Pong Duel</title>
+  <style>
+    :root { --bg:#05070f; --panel:#0f1729; --line:#2d3f66; --text:#eaf1ff; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Segoe UI,Tahoma,sans-serif; display:grid; place-items:center; min-height:100vh; }
+    .wrap { width:min(94vw,920px); }
+    h1 { margin:8px 0; }
+    canvas { width:100%; height:520px; background:#0b1020; border:1px solid var(--line); border-radius:12px; display:block; }
+    .hud { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:8px 2px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
+    .exit { position:fixed; right:12px; top:12px; background:#d84b4b; color:#fff; text-decoration:none; padding:8px 12px; border-radius:8px; font-weight:700; }
+    .overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(2,4,9,.8); z-index:20; padding:16px; }
+    .overlay.open { display:flex; }
+    .card { width:min(92vw,560px); border:1px solid #3a5587; border-radius:14px; background:linear-gradient(180deg,#152541,#0c1528); padding:20px; text-align:center; }
+    .actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { border:1px solid #4f73ad; border-radius:10px; background:linear-gradient(#2f5ca0,#224474); color:#fff; font-weight:700; padding:10px 14px; cursor:pointer; }
+    button.alt { background:linear-gradient(#394357,#2a3141); border-color:#5f708f; }
+    .muted { opacity:.86; font-size:14px; }
+  </style>
+</head>
+<body>
+  <a class="exit" href="games.html">Exit</a>
+  <div class="wrap">
+    <h1>Pong Duel</h1>
+    <div class="hud">
+      <span>Level: <b id="level">1</b></span>
+      <span>Target: <b id="target">3</b></span>
+      <span>Player: <b id="pl">0</b></span>
+      <span>AI: <b id="ai">0</b></span>
+      <span>Status: <b id="status">Ready</b></span>
+    </div>
+    <canvas id="pg" width="900" height="520"></canvas>
+  </div>
+
+  <div class="overlay open" id="menuOverlay">
+    <div class="card" id="menuCard">
+      <h2>Pong Duel Levels</h2>
+      <p class="muted">Beat the AI to clear each level. Every level gets harder.</p>
+      <p class="muted">Controls: <b>W/S</b> or <b>Arrow Up/Down</b></p>
+      <div class="actions">
+        <button id="startBtn">Start Level</button>
+        <button id="resetProgressBtn" class="alt">Reset Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const c = document.getElementById('pg');
+    const x = c.getContext('2d');
+    const plEl = document.getElementById('pl');
+    const aiEl = document.getElementById('ai');
+    const levelEl = document.getElementById('level');
+    const targetEl = document.getElementById('target');
+    const statusEl = document.getElementById('status');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const menuCard = document.getElementById('menuCard');
+    const startBtn = document.getElementById('startBtn');
+    const resetProgressBtn = document.getElementById('resetProgressBtn');
+
+    const L = { x:18, y:220, w:12, h:104 };
+    const R = { x:870, y:220, w:12, h:96 };
+    const b = { x:450, y:260, r:8, vx:5, vy:3 };
+    const k = {};
+
+    let p = 0, a = 0;
+    let level = Math.max(1, Number(localStorage.getItem('pongLevel') || 1));
+    let targetScore = 3;
+    let aiTrack = 0.08;
+    let ballBase = 4.5;
+    let running = false;
+
+    addEventListener('keydown', e => k[e.key.toLowerCase()] = true);
+    addEventListener('keyup', e => k[e.key.toLowerCase()] = false);
+
+    function saveProgress() {
+      localStorage.setItem('pongLevel', String(level));
+    }
+
+    function applyLevelStats() {
+      targetScore = 3 + Math.floor((level - 1) / 2);
+      aiTrack = Math.min(0.048 + level * 0.007, 0.105);
+      ballBase = 3.7 + level * 0.34;
+      L.h = Math.max(88, 112 - (level - 1) * 2);
+      R.h = Math.max(70, 96 - (level - 1) * 3);
+      levelEl.textContent = level;
+      targetEl.textContent = targetScore;
+      statusEl.textContent = 'Level ' + level;
+      startBtn.textContent = 'Start Level ' + level;
+    }
+
+    function resetBall(dir) {
+      b.x = 450;
+      b.y = 260;
+      b.vx = dir * (ballBase + Math.random() * 1.0);
+      b.vy = (Math.random() - 0.5) * (3.8 + level * 0.36);
+    }
+
+    function resetRound() {
+      p = 0;
+      a = 0;
+      L.y = (c.height - L.h) / 2;
+      R.y = (c.height - R.h) / 2;
+      plEl.textContent = '0';
+      aiEl.textContent = '0';
+      resetBall(Math.random() < 0.5 ? -1 : 1);
+    }
+
+    function startLevel() {
+      applyLevelStats();
+      resetRound();
+      running = true;
+      menuOverlay.classList.remove('open');
+    }
+
+    function showMenu(title, text, won) {
+      running = false;
+      menuCard.innerHTML = '' +
+        '<h2>' + title + '</h2>' +
+        '<p class="muted">' + text + '</p>' +
+        '<p class="muted">Controls: <b>W/S</b> or <b>Arrow Up/Down</b></p>' +
+        '<div class="actions">' +
+          '<button id="startBtn">' + (won ? ('Start Level ' + level) : ('Retry Level ' + level)) + '</button>' +
+          '<button id="resetProgressBtn" class="alt">Reset Progress</button>' +
+        '</div>';
+      menuOverlay.classList.add('open');
+      document.getElementById('startBtn').addEventListener('click', startLevel);
+      document.getElementById('resetProgressBtn').addEventListener('click', () => {
+        level = 1;
+        saveProgress();
+        showMenu('Progress Reset', 'Back to level 1. Start when ready.', true);
+      });
+      applyLevelStats();
+    }
+
+    function update() {
+      if (!running) return;
+
+      L.y += ((k['w'] || k['arrowup']) ? -7.6 : 0) + ((k['s'] || k['arrowdown']) ? 7.6 : 0);
+      L.y = Math.max(0, Math.min(c.height - L.h, L.y));
+
+      R.y += (b.y - (R.y + R.h / 2)) * aiTrack;
+      R.y = Math.max(0, Math.min(c.height - R.h, R.y));
+
+      b.x += b.vx;
+      b.y += b.vy;
+      if (b.y < b.r || b.y > c.height - b.r) b.vy *= -1;
+
+      if (b.x - b.r < L.x + L.w && b.y > L.y && b.y < L.y + L.h && b.vx < 0) {
+        b.vx = Math.abs(b.vx) + 0.20;
+        b.vy += (b.y - (L.y + L.h / 2)) * 0.05;
+      }
+      if (b.x + b.r > R.x && b.y > R.y && b.y < R.y + R.h && b.vx > 0) {
+        b.vx = -Math.abs(b.vx) - 0.14;
+        b.vy += (b.y - (R.y + R.h / 2)) * 0.05;
+      }
+
+      if (b.x < 0) {
+        a++;
+        aiEl.textContent = a;
+        resetBall(1);
+      }
+      if (b.x > c.width) {
+        p++;
+        plEl.textContent = p;
+        resetBall(-1);
+      }
+
+      if (p >= targetScore) {
+        level++;
+        saveProgress();
+        showMenu('Level Complete', 'You won! Next level is harder.', true);
+      } else if (a >= targetScore) {
+        showMenu('You Lost', 'AI won this level. Try again.', false);
+      }
+    }
+
+    function draw() {
+      x.fillStyle = '#091126';
+      x.fillRect(0, 0, c.width, c.height);
+      x.fillStyle = 'rgba(255,255,255,.25)';
+      for (let y = 0; y < c.height; y += 28) x.fillRect(c.width / 2 - 2, y, 4, 16);
+      x.fillStyle = '#9fe7ff';
+      x.fillRect(L.x, L.y, L.w, L.h);
+      x.fillStyle = '#ffb08f';
+      x.fillRect(R.x, R.y, R.w, R.h);
+      x.beginPath();
+      x.fillStyle = '#fff';
+      x.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      x.fill();
+    }
+
+    function loop() {
+      requestAnimationFrame(loop);
+      update();
+      draw();
+    }
+
+    applyLevelStats();
+    resetRound();
+    loop();
+
+    startBtn.addEventListener('click', startLevel);
+    resetProgressBtn.addEventListener('click', () => {
+      level = 1;
+      saveProgress();
+      applyLevelStats();
+      statusEl.textContent = 'Progress reset';
+    });
+  </script>
+</body>
+</html>
+
+

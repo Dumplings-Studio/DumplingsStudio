@@ -1,0 +1,35 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Neon Snake</title>
+  <style>
+    body{margin:0;background:#070b14;color:#d7e4ff;font-family:Segoe UI,Tahoma,sans-serif;display:grid;place-items:center;height:100vh}
+    .wrap{width:min(94vw,760px);text-align:center}
+    canvas{width:100%;max-width:720px;aspect-ratio:1/1;background:#05070f;border:1px solid #2b3754;border-radius:12px;display:block;margin:10px auto}
+    .hud{display:flex;justify-content:space-between}
+    .exit{position:fixed;right:12px;top:12px;background:#d84b4b;color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700}
+  </style>
+</head>
+<body>
+  <a class="exit" href="games.html">Exit</a>
+  <div class="wrap">
+    <h1>Neon Snake</h1>
+    <div class="hud"><span>Score: <b id="score">0</b></span><span>Use Arrow Keys / WASD</span></div>
+    <canvas id="game" width="720" height="720"></canvas>
+  </div>
+  <script>
+    const c=document.getElementById('game'),x=c.getContext('2d'),scoreEl=document.getElementById('score');
+    const g=24,tiles=30;let dir={x:1,y:0},next={x:1,y:0},snake=[{x:12,y:15}],food={x:18,y:15},score=0,alive=true;
+    function placeFood(){food={x:Math.floor(Math.random()*tiles),y:Math.floor(Math.random()*tiles)};if(snake.some(s=>s.x===food.x&&s.y===food.y))placeFood();}
+    addEventListener('keydown',e=>{const k=e.key.toLowerCase();if((k==='arrowup'||k==='w')&&dir.y!==1)next={x:0,y:-1};if((k==='arrowdown'||k==='s')&&dir.y!==-1)next={x:0,y:1};if((k==='arrowleft'||k==='a')&&dir.x!==1)next={x:-1,y:0};if((k==='arrowright'||k==='d')&&dir.x!==-1)next={x:1,y:0};if(!alive&&(k==='r'||k===' ')){snake=[{x:12,y:15}];dir=next={x:1,y:0};score=0;scoreEl.textContent=0;alive=true;placeFood();}});
+    function tick(){if(!alive)return draw();dir=next;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=tiles||h.y>=tiles||snake.some(s=>s.x===h.x&&s.y===h.y)){alive=false;return draw();}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;scoreEl.textContent=score;placeFood();}else snake.pop();draw();}
+    function draw(){x.fillStyle='#060a15';x.fillRect(0,0,c.width,c.height);for(let r=0;r<tiles;r++)for(let col=0;col<tiles;col++){x.fillStyle=(r+col)%2?'#091125':'#0b1530';x.fillRect(col*g,r*g,g-1,g-1);}x.fillStyle='#ffd166';x.fillRect(food.x*g+3,food.y*g+3,g-6,g-6);snake.forEach((s,i)=>{x.fillStyle=i?'#4df2b4':'#8af4ff';x.fillRect(s.x*g+2,s.y*g+2,g-4,g-4);});if(!alive){x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 44px Segoe UI';x.textAlign='center';x.fillText('Game Over',c.width/2,c.height/2-10);x.font='20px Segoe UI';x.fillText('Press R or Space to restart',c.width/2,c.height/2+28);}}
+    draw();setInterval(tick,110);
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,1274 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Night Watch - Dumpling Studio</title>
+  <style>
+    :root {
+      --bg: #06080d;
+      --panel: #101521;
+      --line: #2d3a53;
+      --text: #e8edf6;
+      --muted: #9aa8c0;
+      --warn: #ff6f6f;
+      --ok: #89f2c0;
+      --accent: #75b8ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: "Segoe UI", Tahoma, sans-serif; }
+    .game {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+    .view {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 50% 78%, #111828 0%, #070b13 62%, #030407 100%),
+        linear-gradient(180deg, #090d15, #04060a);
+    }
+    .office, .camera {
+      position: absolute;
+      inset: 0;
+      padding: 18px;
+    }
+    .office {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: end;
+      background:
+        radial-gradient(circle at 50% 10%, rgba(255, 232, 142, 0.06), transparent 34%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.016) 0px, rgba(255,255,255,0.016) 2px, transparent 2px, transparent 12px),
+        linear-gradient(180deg, rgba(15, 21, 34, 0.58), rgba(3, 6, 10, 0.88));
+    }
+    .office::before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 14px;
+      height: 20%;
+      border: 1px solid rgba(69, 89, 127, 0.45);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(19, 30, 48, 0.8), rgba(11, 17, 29, 0.55));
+      box-shadow: inset 0 -20px 30px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+    .office::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 12%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 14px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 50% 50%, rgba(255, 236, 164, 0.9), rgba(255, 180, 90, 0.25));
+      box-shadow: 0 0 20px rgba(255, 212, 130, 0.35);
+      pointer-events: none;
+    }
+    .office-side {
+      position: absolute;
+      top: 22%;
+      bottom: 16%;
+      width: 18px;
+      border: 1px solid rgba(69, 89, 127, 0.5);
+      background: linear-gradient(180deg, #1d2a44, #10192a);
+      box-shadow: inset 0 0 14px rgba(0,0,0,0.3);
+    }
+    .office-side.left { left: 8px; border-radius: 8px 0 0 8px; }
+    .office-side.right { right: 8px; border-radius: 0 8px 8px 0; }
+    .warning-lamp {
+      position: absolute;
+      top: 24%;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid #5f759f;
+      background: radial-gradient(circle at 35% 35%, #243654, #0f1828 75%);
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+    }
+    .warning-lamp.left { left: 34px; }
+    .warning-lamp.right { right: 34px; }
+    .warning-lamp.alert {
+      background: radial-gradient(circle at 35% 35%, #ffc4a3, #c64d3d 70%);
+      box-shadow: 0 0 16px rgba(255, 102, 84, 0.65);
+      animation: blinkLamp .45s steps(2, end) infinite;
+    }
+    @keyframes blinkLamp {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(0.6); }
+      100% { filter: brightness(1); }
+    }
+    .door {
+      height: 55%;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #2b3648, #192332 58%, #101825);
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.5), 0 10px 24px rgba(0,0,0,0.28);
+    }
+    .door-metal {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(90deg, rgba(220,230,255,0.07) 0px, rgba(220,230,255,0.07) 2px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 11px),
+        linear-gradient(180deg, rgba(189,205,235,0.18), rgba(48,64,92,0.18) 35%, rgba(8,11,17,0.22));
+    }
+    .door-metal::before, .door-metal::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      width: 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #7b8ba7, #3f4d66);
+      box-shadow: inset 0 0 4px rgba(255,255,255,0.22);
+      opacity: 0.65;
+    }
+    .door-metal::before { left: 8px; }
+    .door-metal::after { right: 8px; }
+    .door.closed .door-metal {
+      opacity: 0.5;
+    }
+    .door h3 {
+      margin: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .panel-center {
+      align-self: stretch;
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 12px 14px;
+      background: linear-gradient(180deg, #19243a, #101723);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .office-desk {
+      margin-top: 10px;
+      border: 1px solid #3a4a6b;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #2b3c5c, #1a253a);
+      padding: 10px;
+    }
+    .desk-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      align-items: end;
+    }
+    .mini-monitor {
+      height: 44px;
+      border-radius: 6px;
+      border: 1px solid #4f648e;
+      background:
+        repeating-linear-gradient(0deg, rgba(220,240,255,0.08) 0px, rgba(220,240,255,0.08) 1px, transparent 1px, transparent 3px),
+        linear-gradient(180deg, #15223a, #0d1526);
+      position: relative;
+    }
+    .mini-monitor::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      width: 16px;
+      height: 8px;
+      border-radius: 2px;
+      background: #2a3a58;
+      border: 1px solid #455e85;
+    }
+    .paper-stack {
+      height: 34px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, #d6dce7, #b0bacd);
+      border: 1px solid #8794aa;
+      transform: rotate(-3deg);
+    }
+    .fan {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      margin: 0 auto;
+      border-radius: 50%;
+      border: 2px solid #475f87;
+      background: radial-gradient(circle at 50% 50%, #263a5a 20%, #16253f 72%);
+      animation: spin 1.5s linear infinite;
+    }
+    .fan::before, .fan::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 3px;
+      height: 20px;
+      background: #93a9d2;
+      transform-origin: 50% 3px;
+      border-radius: 2px;
+    }
+    .fan::before { transform: translate(-50%, -50%) rotate(0deg); }
+    .fan::after { transform: translate(-50%, -50%) rotate(90deg); }
+    .fan span {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 3px;
+      height: 20px;
+      background: #93a9d2;
+      transform-origin: 50% 3px;
+      border-radius: 2px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      display: block;
+    }
+    .fan span::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 3px;
+      height: 20px;
+      background: #93a9d2;
+      transform-origin: 50% 3px;
+      transform: rotate(90deg);
+      border-radius: 2px;
+    }
+    .poster-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .poster {
+      font-size: 10px;
+      letter-spacing: .5px;
+      border: 1px solid #4e6189;
+      border-radius: 6px;
+      padding: 4px;
+      text-align: center;
+      color: #b9c9e7;
+      background: linear-gradient(180deg, #1d2b42, #0d1628);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    .poster.warn {
+      border-color: #8f6262;
+      color: #ffd3d3;
+      background: linear-gradient(180deg, #3b1d24, #241015);
+    }
+    .poster.metal {
+      border-color: #6f7f99;
+      color: #d7e4ff;
+      background: linear-gradient(180deg, #314058, #1d293c);
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .anim-eye {
+      width: 20px;
+      height: 8px;
+      border-radius: 6px;
+      background: #ffce5c;
+      opacity: 0;
+      transition: opacity .15s;
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px rgba(255, 206, 92, 0.6);
+    }
+    .door.light .anim-eye.visible { opacity: 1; }
+    .door-plate {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      height: 18px;
+      border-radius: 999px;
+      background: #1a2337;
+      border: 1px solid #2d3a53;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .door.closed::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(110, 130, 165, 0.9) 0px,
+        rgba(110, 130, 165, 0.9) 7px,
+        rgba(75, 96, 132, 0.95) 7px,
+        rgba(75, 96, 132, 0.95) 14px
+      );
+      animation: shutter .25s linear;
+    }
+    @keyframes shutter {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0%); }
+    }
+    .camera {
+      display: none;
+      background: #0a0e17;
+    }
+    .camera.active { display: block; }
+    .feed {
+      height: calc(100% - 160px);
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,0.22) 50%, rgba(255,255,255,0.02) 50%),
+        linear-gradient(180deg, #192338, #101625);
+      background-size: 4px 100%, 100% 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    .cam-photo {
+      position: absolute;
+      inset: 0;
+      opacity: 0.55;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .cam-photo.cam1 {
+      background:
+        radial-gradient(circle at 20% 65%, rgba(130,120,90,0.28), transparent 32%),
+        radial-gradient(circle at 70% 58%, rgba(120,90,130,0.22), transparent 30%),
+        linear-gradient(180deg, #2a2d33, #1b1d24 48%, #10131a);
+    }
+    .cam-photo.cam2 {
+      background:
+        radial-gradient(circle at 82% 40%, rgba(110,125,170,0.24), transparent 36%),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 10px),
+        linear-gradient(180deg, #202838, #131b2a);
+    }
+    .cam-photo.cam3 {
+      background:
+        radial-gradient(circle at 16% 42%, rgba(160,130,90,0.25), transparent 28%),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 8px),
+        linear-gradient(180deg, #2c2520, #191610 58%, #0f1012);
+    }
+    .cam-photo.cam4 {
+      background:
+        radial-gradient(circle at 68% 35%, rgba(130,115,160,0.2), transparent 38%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px),
+        linear-gradient(180deg, #242436, #141524);
+    }
+    .static {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255,255,255,0.04) 0px,
+        rgba(255,255,255,0.04) 1px,
+        rgba(0,0,0,0) 1px,
+        rgba(0,0,0,0) 3px
+      );
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    .anim-sprite {
+      position: absolute;
+      width: 42px;
+      height: 64px;
+      border-radius: 12px 12px 8px 8px;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.95);
+      transition: opacity .18s, transform .18s;
+      pointer-events: none;
+      filter: drop-shadow(0 0 12px rgba(0,0,0,0.45));
+    }
+    .anim-sprite::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -12px;
+      width: 24px;
+      height: 20px;
+      transform: translateX(-50%);
+      border-radius: 50% 50% 42% 42%;
+      background: inherit;
+    }
+    .anim-sprite::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 20px;
+      width: 10px;
+      height: 6px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 0 6px rgba(255,255,255,0.5);
+    }
+    .anim-sprite.bonnie {
+      background: linear-gradient(180deg, #7f89ff, #3f4f9a);
+    }
+    .anim-sprite.chica {
+      background: linear-gradient(180deg, #ffd56c, #a57b1f);
+    }
+    .anim-sprite.visible {
+      opacity: 0.9;
+      transform: translate(-50%, -50%) scale(1);
+      animation: animIdle .8s ease-in-out infinite alternate;
+    }
+    .anim-sprite.door {
+      transform: translate(-50%, -50%) scale(1.08);
+      animation: animThreat .18s steps(2, end) infinite;
+    }
+    @keyframes animIdle {
+      from { margin-top: 0; }
+      to { margin-top: -3px; }
+    }
+    @keyframes animThreat {
+      0% { filter: drop-shadow(0 0 8px rgba(255, 90, 90, 0.6)); }
+      100% { filter: drop-shadow(0 0 14px rgba(255, 130, 130, 0.95)); }
+    }
+    .camera-glitch {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(180deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 2px, transparent 2px, transparent 5px),
+        linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,255,0.04));
+      mix-blend-mode: screen;
+    }
+    .camera-glitch.active {
+      opacity: 0.85;
+      animation: glitchShift .12s steps(2, end) infinite;
+    }
+    @keyframes glitchShift {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(-2px); }
+      100% { transform: translateX(2px); }
+    }
+    .ambient-spark {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(circle, rgba(255,245,180,0.9) 0%, rgba(255,180,80,0.6) 35%, rgba(255,180,80,0) 70%);
+      z-index: 9;
+    }
+    .ambient-spark.show {
+      opacity: 1;
+      animation: sparkFlash .23s ease-out forwards;
+    }
+    @keyframes sparkFlash {
+      0% { transform: scale(0.3); opacity: 0.95; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+    .camera-label {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .camera-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .camera-row button.active { border-color: var(--accent); color: #dceeff; }
+    .camera-map {
+      margin-top: 10px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: linear-gradient(180deg, #0e1524, #0a0f1a);
+      position: relative;
+      height: 126px;
+    }
+    .map-node {
+      position: absolute;
+      width: 64px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid #44608f;
+      background: #16233a;
+      color: #c8d8f7;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .map-node.active {
+      border-color: var(--accent);
+      color: #f1f7ff;
+      box-shadow: 0 0 10px rgba(117,184,255,0.3);
+    }
+    .map-room {
+      position: absolute;
+      border-radius: 999px;
+      border: 1px solid #3f557e;
+      background: #101b30;
+      color: #9eb2d6;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 0 8px;
+      height: 22px;
+      min-width: 64px;
+    }
+    .map-room.office {
+      border-color: #526d9c;
+      color: #d8e5ff;
+      background: #1a2a45;
+    }
+    .map-link {
+      position: absolute;
+      height: 2px;
+      background: rgba(93, 119, 165, 0.8);
+      transform-origin: left center;
+      pointer-events: none;
+    }
+    .map-bot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(255,255,255,0.2);
+      transform: translate(-50%, -50%);
+      animation: botPulse 1s ease-in-out infinite alternate;
+    }
+    .map-bot.bonnie {
+      background: #8f9bff;
+      box-shadow: 0 0 10px rgba(120,136,255,0.75);
+    }
+    .map-bot.chica {
+      background: #ffd26b;
+      box-shadow: 0 0 10px rgba(255,201,92,0.75);
+    }
+    @keyframes botPulse {
+      from { transform: translate(-50%, -50%) scale(0.85); }
+      to { transform: translate(-50%, -50%) scale(1.15); }
+    }
+    .hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 14px;
+      text-shadow: 0 2px 4px rgba(0,0,0,.6);
+      pointer-events: none;
+    }
+    .status {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(4, 8, 15, 0.85);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      background: #090d14;
+    }
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { border-color: #44608f; }
+    button.on { border-color: var(--ok); color: #c6ffe5; }
+    button.warn { border-color: var(--warn); color: #ffd2d2; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.74);
+      z-index: 30;
+      text-align: center;
+      padding: 20px;
+    }
+    .overlay-card {
+      width: min(600px, 94vw);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      background: #0a101a;
+    }
+    .overlay h1 { margin: 0 0 8px; font-size: 34px; font-family: Orbitron, "Segoe UI", sans-serif; }
+    .overlay p { margin: 8px 0; color: var(--muted); }
+    .jumpscare {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      background: radial-gradient(circle at 50% 50%, #a00 0%, #100 75%);
+      color: white;
+      font-size: clamp(36px, 10vw, 96px);
+      font-weight: 800;
+      justify-content: center;
+      align-items: center;
+      text-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+    }
+    .jumpscare.show { display: flex; }
+    .exit-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 60;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #d84b4b;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .office-intruder {
+      position: absolute;
+      bottom: 12%;
+      left: 50%;
+      width: 88px;
+      height: 150px;
+      transform: translateX(-50%) scale(0.8);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 8;
+      transition: opacity .08s linear, transform .08s linear;
+      filter: drop-shadow(0 0 20px rgba(0,0,0,0.8));
+    }
+    .office-intruder::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 4px;
+      width: 46px;
+      height: 46px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, rgba(255,190,150,0.6), rgba(40,30,34,0.95) 70%);
+    }
+    .office-intruder::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 38px;
+      width: 70px;
+      height: 98px;
+      transform: translateX(-50%);
+      border-radius: 40% 40% 22% 22%;
+      background: linear-gradient(180deg, rgba(50,58,90,0.96), rgba(26,29,45,0.98));
+    }
+    .office-intruder.bonnie::after {
+      background: linear-gradient(180deg, rgba(78,90,160,0.95), rgba(35,38,68,0.98));
+    }
+    .office-intruder.chica::after {
+      background: linear-gradient(180deg, rgba(160,130,60,0.96), rgba(58,47,26,0.98));
+    }
+    .office-intruder.show {
+      opacity: 0.96;
+      transform: translateX(-50%) scale(1);
+      animation: intruderJitter .12s steps(2, end) infinite;
+    }
+    @keyframes intruderJitter {
+      0% { margin-left: -1px; }
+      100% { margin-left: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="exit-btn" href="games.html">Exit</a>
+  <div class="game">
+    <div class="view" id="view">
+      <div class="hud">
+        <div>Power: <span id="powerText">100%</span></div>
+        <div>Time: <span id="timeText">12 AM</span></div>
+      </div>
+
+      <div class="office" id="officeView">
+        <div class="office-side left"></div>
+        <div class="office-side right"></div>
+        <div class="warning-lamp left" id="leftLamp"></div>
+        <div class="warning-lamp right" id="rightLamp"></div>
+        <div class="ambient-spark" id="ambientSpark"></div>
+        <div class="door" id="leftDoor">
+          <div class="door-metal"></div>
+          <h3>Left Door</h3>
+          <div class="anim-eye" id="leftEye"></div>
+          <div class="door-plate" id="leftDoorPlate">Open</div>
+        </div>
+        <div class="panel-center">
+          <div>
+            <h2 style="margin:0 0 8px; font-size:22px;">Night Watch</h2>
+            <p style="margin:0; color:#9aa8c0;">Hold until 6 AM. Use doors, lights and cams carefully.</p>
+            <div class="poster-row">
+              <div class="poster metal">WATCH METALLIC DOORS</div>
+              <div class="poster warn">NO POWER, NO SURVIVAL</div>
+            </div>
+          </div>
+          <div class="office-desk">
+            <div class="desk-top">
+              <div class="mini-monitor"></div>
+              <div class="fan"><span></span></div>
+              <div class="paper-stack"></div>
+            </div>
+          </div>
+          <p id="threatText" style="margin:0; font-size:13px; color:#ffb3b3;">Threat: Low</p>
+        </div>
+        <div class="door" id="rightDoor">
+          <div class="door-metal"></div>
+          <h3>Right Door</h3>
+          <div class="anim-eye" id="rightEye"></div>
+          <div class="door-plate" id="rightDoorPlate">Open</div>
+        </div>
+      </div>
+
+      <div class="camera" id="cameraView">
+        <div class="feed">
+          <div class="camera-label" id="cameraLabel">CAM 1 - Dining</div>
+          <div id="cameraInfo" style="color:#d5e2ff; font-size:14px;"></div>
+          <div class="cam-photo cam1" id="camPhoto"></div>
+          <div class="anim-sprite bonnie" id="bonnieSprite"></div>
+          <div class="anim-sprite chica" id="chicaSprite"></div>
+          <div class="static"></div>
+          <div class="camera-glitch" id="cameraGlitch"></div>
+        </div>
+        <div class="camera-row">
+          <button data-cam="1">CAM 1</button>
+          <button data-cam="2">CAM 2</button>
+          <button data-cam="3">CAM 3</button>
+          <button data-cam="4">CAM 4</button>
+        </div>
+        <div class="camera-map" id="cameraMap">
+          <div class="map-link" style="left: 112px; top: 20px; width: 56px;"></div>
+          <div class="map-link" style="left: 196px; top: 20px; width: 56px;"></div>
+          <div class="map-link" style="left: 144px; top: 32px; width: 2px; height: 24px;"></div>
+          <div class="map-link" style="left: 236px; top: 32px; width: 2px; height: 24px;"></div>
+          <div class="map-link" style="left: 144px; top: 56px; width: 94px;"></div>
+          <div class="map-link" style="left: 188px; top: 70px; width: 2px; height: 24px;"></div>
+          <button class="map-node" data-cam-node="1" style="left: 48px; top: 8px;">CAM 1</button>
+          <button class="map-node" data-cam-node="2" style="left: 132px; top: 8px;">CAM 2</button>
+          <button class="map-node" data-cam-node="3" style="left: 216px; top: 8px;">CAM 3</button>
+          <button class="map-node" data-cam-node="4" style="left: 132px; top: 56px;">CAM 4</button>
+          <div class="map-room" style="left: 214px; top: 56px;">Kitchen</div>
+          <div class="map-room office" style="left: 156px; top: 94px; min-width: 70px;">Office</div>
+          <div class="map-bot bonnie" id="bonnieMapBot"></div>
+          <div class="map-bot chica" id="chicaMapBot"></div>
+        </div>
+      </div>
+
+      <div class="status" id="statusText">System Online</div>
+      <div class="office-intruder bonnie" id="officeIntruderBonnie"></div>
+      <div class="office-intruder chica" id="officeIntruderChica"></div>
+
+      <div class="overlay" id="menuOverlay">
+        <div class="overlay-card">
+          <h1>Night Watch</h1>
+          <p>FNAF-style survival prototype.</p>
+          <p>Buttons: Doors, Lights, Camera. Drain less power than the animatronics drain your nerves.</p>
+          <button id="startBtn">Start Night</button>
+          <p><a href="games.html" style="color:#fff;">Back to Games</a></p>
+        </div>
+      </div>
+
+      <div class="overlay" id="endOverlay" style="display:none;">
+        <div class="overlay-card">
+          <h1 id="endTitle">You Survived</h1>
+          <p id="endInfo"></p>
+          <button id="retryBtn">Try Again</button>
+        </div>
+      </div>
+
+      <div class="jumpscare" id="jumpscare">!</div>
+    </div>
+
+    <div class="controls">
+      <button id="leftDoorBtn">Left Door</button>
+      <button id="leftLightBtn">Left Light</button>
+      <button id="cameraBtn">Camera</button>
+      <button id="rightLightBtn">Right Light</button>
+      <button id="rightDoorBtn">Right Door</button>
+      <button id="muteBtn">Mute Audio</button>
+      <button id="restartBtn">Restart</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const NIGHT_DURATION = 120;
+      const POWER_BASE_DRAIN = 0.065;
+      const ATTACK_DELAY = 2.2;
+      const MOVE_INTERVAL_MIN = 1.8;
+      const MOVE_INTERVAL_MAX = 4.2;
+
+      const menuOverlay = document.getElementById('menuOverlay');
+      const endOverlay = document.getElementById('endOverlay');
+      const endTitle = document.getElementById('endTitle');
+      const endInfo = document.getElementById('endInfo');
+      const jumpscare = document.getElementById('jumpscare');
+      const officeView = document.getElementById('officeView');
+      const cameraView = document.getElementById('cameraView');
+      const cameraLabel = document.getElementById('cameraLabel');
+      const cameraInfo = document.getElementById('cameraInfo');
+      const camPhoto = document.getElementById('camPhoto');
+      const bonnieSprite = document.getElementById('bonnieSprite');
+      const chicaSprite = document.getElementById('chicaSprite');
+      const bonnieMapBot = document.getElementById('bonnieMapBot');
+      const chicaMapBot = document.getElementById('chicaMapBot');
+      const officeIntruderBonnie = document.getElementById('officeIntruderBonnie');
+      const officeIntruderChica = document.getElementById('officeIntruderChica');
+      const powerText = document.getElementById('powerText');
+      const timeText = document.getElementById('timeText');
+      const threatText = document.getElementById('threatText');
+      const statusText = document.getElementById('statusText');
+
+      const leftDoorEl = document.getElementById('leftDoor');
+      const rightDoorEl = document.getElementById('rightDoor');
+      const leftDoorPlate = document.getElementById('leftDoorPlate');
+      const rightDoorPlate = document.getElementById('rightDoorPlate');
+      const leftEye = document.getElementById('leftEye');
+      const rightEye = document.getElementById('rightEye');
+      const leftLamp = document.getElementById('leftLamp');
+      const rightLamp = document.getElementById('rightLamp');
+      const ambientSpark = document.getElementById('ambientSpark');
+      const cameraGlitch = document.getElementById('cameraGlitch');
+
+      const startBtn = document.getElementById('startBtn');
+      const retryBtn = document.getElementById('retryBtn');
+      const restartBtn = document.getElementById('restartBtn');
+      const leftDoorBtn = document.getElementById('leftDoorBtn');
+      const rightDoorBtn = document.getElementById('rightDoorBtn');
+      const leftLightBtn = document.getElementById('leftLightBtn');
+      const rightLightBtn = document.getElementById('rightLightBtn');
+      const cameraBtn = document.getElementById('cameraBtn');
+      const muteBtn = document.getElementById('muteBtn');
+      const camButtons = [...document.querySelectorAll('[data-cam]')];
+      const mapCamButtons = [...document.querySelectorAll('[data-cam-node]')];
+
+      const state = {
+        running: false,
+        muted: false,
+        time: 0,
+        power: 100,
+        leftDoorClosed: false,
+        rightDoorClosed: false,
+        leftLightOn: false,
+        rightLightOn: false,
+        cameraOpen: false,
+        cameraId: 1,
+        attackTimerL: 0,
+        attackTimerR: 0,
+        moveTimerL: 0,
+        moveTimerR: 0,
+        bonnieStep: 0,
+        chicaStep: 0,
+        ambientEventTimer: 0,
+        glitchTimer: 0,
+        officeFlicker: 0,
+        statusMessage: '',
+        statusTimer: 0,
+        raf: 0
+      };
+
+      function randomMoveDelay() {
+        return MOVE_INTERVAL_MIN + Math.random() * (MOVE_INTERVAL_MAX - MOVE_INTERVAL_MIN);
+      }
+
+      function setCamera(id) {
+        state.cameraId = id;
+        for (const btn of camButtons) btn.classList.toggle('active', Number(btn.dataset.cam) === id);
+        for (const btn of mapCamButtons) btn.classList.toggle('active', Number(btn.dataset.camNode) === id);
+      }
+
+      function positionMapBots() {
+        const bonniePoints = [
+          { x: 80, y: 20 },
+          { x: 142, y: 20 },
+          { x: 142, y: 68 },
+          { x: 190, y: 106 },
+        ];
+        const chicaPoints = [
+          { x: 80, y: 20 },
+          { x: 248, y: 68 },
+          { x: 226, y: 20 },
+          { x: 190, y: 106 },
+        ];
+        const b = bonniePoints[Math.min(3, state.bonnieStep)];
+        const c = chicaPoints[Math.min(3, state.chicaStep)];
+        bonnieMapBot.style.left = `${b.x}px`;
+        bonnieMapBot.style.top = `${b.y}px`;
+        chicaMapBot.style.left = `${c.x}px`;
+        chicaMapBot.style.top = `${c.y}px`;
+      }
+
+      function setFeedSprite(el, visible, x, y, doorMode) {
+        el.style.left = `${x}%`;
+        el.style.top = `${y}%`;
+        el.classList.toggle('visible', visible);
+        el.classList.toggle('door', visible && doorMode);
+      }
+
+      function resetGame() {
+        state.time = 0;
+        state.power = 100;
+        state.leftDoorClosed = false;
+        state.rightDoorClosed = false;
+        state.leftLightOn = false;
+        state.rightLightOn = false;
+        state.cameraOpen = false;
+        state.cameraId = 1;
+        state.attackTimerL = 0;
+        state.attackTimerR = 0;
+        state.moveTimerL = randomMoveDelay();
+        state.moveTimerR = randomMoveDelay();
+        state.bonnieStep = 0;
+        state.chicaStep = 0;
+        state.ambientEventTimer = 2 + Math.random() * 4;
+        state.glitchTimer = 0;
+        state.officeFlicker = 0;
+        state.statusMessage = '';
+        state.statusTimer = 0;
+        officeIntruderBonnie.classList.remove('show');
+        officeIntruderChica.classList.remove('show');
+        setCamera(1);
+        jumpscare.classList.remove('show');
+        endOverlay.style.display = 'none';
+        updateUI();
+      }
+
+      function currentHour() {
+        const hour = Math.min(6, Math.floor((state.time / NIGHT_DURATION) * 6));
+        return hour === 0 ? '12 AM' : `${hour} AM`;
+      }
+
+      function updateCameraFeed() {
+        const posBonnie = ['Stage', 'Dining', 'West Hall', 'Left Door'][Math.min(3, state.bonnieStep)];
+        const posChica = ['Stage', 'Kitchen', 'East Hall', 'Right Door'][Math.min(3, state.chicaStep)];
+        positionMapBots();
+
+        let showBonnie = false;
+        let showChica = false;
+        let bx = 50, by = 58, cx = 62, cy = 58;
+        let bonnieDoorMode = false;
+        let chicaDoorMode = false;
+
+        if (state.cameraId === 1) {
+          cameraLabel.textContent = 'CAM 1 - Dining';
+          cameraInfo.innerHTML = `Bonnie: <b>${posBonnie}</b><br>Chica: <b>${posChica}</b>`;
+          showBonnie = state.bonnieStep <= 1;
+          showChica = state.chicaStep === 0;
+          bx = state.bonnieStep === 0 ? 38 : 52;
+          by = state.bonnieStep === 0 ? 54 : 61;
+          cx = 69;
+          cy = 56;
+        } else if (state.cameraId === 2) {
+          cameraLabel.textContent = 'CAM 2 - Left Hall';
+          cameraInfo.innerHTML = state.bonnieStep >= 2 ? 'Something is moving in the dark...' : 'Hall is clear.';
+          showBonnie = state.bonnieStep >= 2;
+          bx = state.bonnieStep === 2 ? 54 : 72;
+          by = state.bonnieStep === 2 ? 62 : 58;
+          bonnieDoorMode = state.bonnieStep >= 3;
+        } else if (state.cameraId === 3) {
+          cameraLabel.textContent = 'CAM 3 - Right Hall';
+          cameraInfo.innerHTML = state.chicaStep >= 2 ? 'Static spikes near right corridor.' : 'No movement.';
+          showChica = state.chicaStep >= 2;
+          cx = state.chicaStep === 2 ? 58 : 76;
+          cy = state.chicaStep === 2 ? 61 : 57;
+          chicaDoorMode = state.chicaStep >= 3;
+        } else {
+          cameraLabel.textContent = 'CAM 4 - Backstage';
+          const panic = state.bonnieStep + state.chicaStep >= 5 ? 'Audio peaks detected.' : 'Low machine noise.';
+          cameraInfo.innerHTML = panic;
+          showChica = state.chicaStep === 1;
+          cx = 62; cy = 58;
+        }
+
+        camPhoto.className = `cam-photo cam${state.cameraId}`;
+        setFeedSprite(bonnieSprite, showBonnie, bx, by, bonnieDoorMode);
+        setFeedSprite(chicaSprite, showChica, cx, cy, chicaDoorMode);
+      }
+
+      function updateOfficeIntruders() {
+        const bShowing = state.attackTimerL > 0 && !state.leftDoorClosed;
+        const cShowing = state.attackTimerR > 0 && !state.rightDoorClosed;
+
+        officeIntruderBonnie.classList.toggle('show', bShowing);
+        officeIntruderChica.classList.toggle('show', cShowing);
+
+        if (bShowing) {
+          const p = Math.min(1, state.attackTimerL / ATTACK_DELAY);
+          officeIntruderBonnie.style.left = `${36 + p * 14}%`;
+          officeIntruderBonnie.style.bottom = `${10 + p * 4}%`;
+          officeIntruderBonnie.style.transform = `translateX(-50%) scale(${0.78 + p * 0.36})`;
+        } else {
+          officeIntruderBonnie.style.transform = 'translateX(-50%) scale(0.8)';
+        }
+
+        if (cShowing) {
+          const p = Math.min(1, state.attackTimerR / ATTACK_DELAY);
+          officeIntruderChica.style.left = `${64 - p * 14}%`;
+          officeIntruderChica.style.bottom = `${10 + p * 4}%`;
+          officeIntruderChica.style.transform = `translateX(-50%) scale(${0.78 + p * 0.36})`;
+        } else {
+          officeIntruderChica.style.transform = 'translateX(-50%) scale(0.8)';
+        }
+      }
+
+      function updateThreatText() {
+        const danger = state.bonnieStep + state.chicaStep;
+        let label = 'Low';
+        if (danger >= 4) label = 'High';
+        else if (danger >= 2) label = 'Medium';
+        threatText.textContent = `Threat: ${label}`;
+        threatText.style.color = label === 'High' ? '#ff8f8f' : label === 'Medium' ? '#ffd39a' : '#b4f3c6';
+      }
+
+      function updateDoorVisuals() {
+        leftDoorEl.classList.toggle('closed', state.leftDoorClosed);
+        rightDoorEl.classList.toggle('closed', state.rightDoorClosed);
+        leftDoorPlate.textContent = state.leftDoorClosed ? 'Closed' : 'Open';
+        rightDoorPlate.textContent = state.rightDoorClosed ? 'Closed' : 'Open';
+
+        leftDoorEl.classList.toggle('light', state.leftLightOn);
+        rightDoorEl.classList.toggle('light', state.rightLightOn);
+        leftEye.classList.toggle('visible', state.bonnieStep >= 3);
+        rightEye.classList.toggle('visible', state.chicaStep >= 3);
+        leftLamp.classList.toggle('alert', state.bonnieStep >= 2);
+        rightLamp.classList.toggle('alert', state.chicaStep >= 2);
+      }
+
+      function triggerAmbientSpark() {
+        const x = 28 + Math.random() * 44;
+        const y = 18 + Math.random() * 26;
+        const useRight = Math.random() > 0.5;
+        ambientSpark.style.left = useRight ? `calc(100% - ${x + 30}px)` : `${x}px`;
+        ambientSpark.style.top = `${y}%`;
+        ambientSpark.classList.remove('show');
+        void ambientSpark.offsetWidth;
+        ambientSpark.classList.add('show');
+      }
+
+      function setTransientStatus(message, duration = 1.5) {
+        state.statusMessage = message;
+        state.statusTimer = duration;
+      }
+
+      function triggerCameraGlitch(duration = 0.28) {
+        state.glitchTimer = Math.max(state.glitchTimer, duration);
+      }
+
+      function tickAmbient(dt) {
+        state.ambientEventTimer -= dt;
+        if (state.ambientEventTimer > 0) return;
+        state.ambientEventTimer = 2.2 + Math.random() * 5.5;
+
+        const danger = state.bonnieStep + state.chicaStep;
+        const roll = Math.random();
+        if (roll < 0.36) {
+          triggerAmbientSpark();
+          setTransientStatus('Power relay pop detected');
+        } else if (roll < 0.72) {
+          setTransientStatus(danger >= 4 ? 'Heavy footsteps in hall' : 'Distant metallic clank');
+          if (danger >= 3) triggerCameraGlitch(0.38);
+        } else {
+          state.officeFlicker = 0.12 + Math.random() * 0.16;
+          setTransientStatus('Lights flicker', 1.2);
+        }
+      }
+
+      function updateButtons() {
+        leftDoorBtn.classList.toggle('on', state.leftDoorClosed);
+        rightDoorBtn.classList.toggle('on', state.rightDoorClosed);
+        leftLightBtn.classList.toggle('on', state.leftLightOn);
+        rightLightBtn.classList.toggle('on', state.rightLightOn);
+        cameraBtn.classList.toggle('on', state.cameraOpen);
+        muteBtn.classList.toggle('warn', state.muted);
+      }
+
+      function updateUI() {
+        powerText.textContent = `${Math.max(0, state.power).toFixed(0)}%`;
+        timeText.textContent = currentHour();
+        const baseStatus = state.power > 0 ? (state.cameraOpen ? 'Camera Feed Active' : 'Office View Active') : 'Power Out';
+        statusText.textContent = state.statusTimer > 0 ? state.statusMessage : baseStatus;
+
+        officeView.style.display = state.cameraOpen ? 'none' : 'grid';
+        cameraView.classList.toggle('active', state.cameraOpen);
+        updateDoorVisuals();
+        updateButtons();
+        updateThreatText();
+        updateCameraFeed();
+      }
+
+      function triggerLose(reason) {
+        state.running = false;
+        jumpscare.classList.add('show');
+        setTimeout(() => {
+          jumpscare.classList.remove('show');
+          endTitle.textContent = 'Game Over';
+          endInfo.textContent = reason;
+          endOverlay.style.display = 'flex';
+        }, 900);
+      }
+
+      function triggerWin() {
+        state.running = false;
+        endTitle.textContent = '6 AM';
+        endInfo.textContent = 'You survived the night.';
+        endOverlay.style.display = 'flex';
+      }
+
+      function tickAnimatronics(dt) {
+        state.moveTimerL -= dt;
+        state.moveTimerR -= dt;
+
+        const pressure = 1 + (state.time / NIGHT_DURATION) * 0.8;
+        if (state.moveTimerL <= 0) {
+          const before = state.bonnieStep;
+          if (Math.random() < 0.62 * pressure && state.bonnieStep < 3) state.bonnieStep += 1;
+          else if (Math.random() < 0.25 && state.bonnieStep > 0) state.bonnieStep -= 1;
+          if (state.bonnieStep > before && state.cameraOpen) triggerCameraGlitch(0.32);
+          state.moveTimerL = randomMoveDelay();
+        }
+        if (state.moveTimerR <= 0) {
+          const before = state.chicaStep;
+          if (Math.random() < 0.59 * pressure && state.chicaStep < 3) state.chicaStep += 1;
+          else if (Math.random() < 0.25 && state.chicaStep > 0) state.chicaStep -= 1;
+          if (state.chicaStep > before && state.cameraOpen) triggerCameraGlitch(0.32);
+          state.moveTimerR = randomMoveDelay();
+        }
+
+        if (state.bonnieStep >= 3) {
+          if (state.leftDoorClosed) {
+            state.bonnieStep = 1;
+            state.attackTimerL = 0;
+          } else {
+            state.attackTimerL += dt;
+            if (state.attackTimerL >= ATTACK_DELAY) return triggerLose('Bonnie got into the office.');
+          }
+        } else {
+          state.attackTimerL = 0;
+        }
+
+        if (state.chicaStep >= 3) {
+          if (state.rightDoorClosed) {
+            state.chicaStep = 1;
+            state.attackTimerR = 0;
+          } else {
+            state.attackTimerR += dt;
+            if (state.attackTimerR >= ATTACK_DELAY) return triggerLose('Chica attacked from the right hall.');
+          }
+        } else {
+          state.attackTimerR = 0;
+        }
+      }
+
+      function consumePower(dt) {
+        let drain = POWER_BASE_DRAIN;
+        if (state.cameraOpen) drain += 0.06;
+        if (state.leftDoorClosed) drain += 0.09;
+        if (state.rightDoorClosed) drain += 0.09;
+        if (state.leftLightOn) drain += 0.06;
+        if (state.rightLightOn) drain += 0.06;
+        state.power -= drain * dt * 10;
+        if (state.power <= 0) {
+          state.power = 0;
+          state.cameraOpen = false;
+          state.leftLightOn = false;
+          state.rightLightOn = false;
+          state.leftDoorClosed = false;
+          state.rightDoorClosed = false;
+        }
+      }
+
+      let last = performance.now();
+      function frame(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        if (state.running) {
+          state.time += dt;
+          consumePower(dt);
+          tickAnimatronics(dt);
+          tickAmbient(dt);
+          if (state.glitchTimer > 0) state.glitchTimer -= dt;
+          if (state.officeFlicker > 0) state.officeFlicker -= dt;
+          if (state.statusTimer > 0) state.statusTimer -= dt;
+          if (state.running && state.time >= NIGHT_DURATION) triggerWin();
+          updateUI();
+          updateOfficeIntruders();
+        }
+        cameraGlitch.classList.toggle('active', state.glitchTimer > 0 && state.cameraOpen);
+        officeView.style.filter = state.officeFlicker > 0 ? 'brightness(0.65)' : '';
+        state.raf = requestAnimationFrame(frame);
+      }
+
+      function startNight() {
+        resetGame();
+        menuOverlay.style.display = 'none';
+        endOverlay.style.display = 'none';
+        state.running = true;
+      }
+
+      startBtn.addEventListener('click', startNight);
+      retryBtn.addEventListener('click', startNight);
+      restartBtn.addEventListener('click', () => {
+        if (!state.running) {
+          menuOverlay.style.display = 'flex';
+          endOverlay.style.display = 'none';
+        } else {
+          startNight();
+        }
+      });
+
+      leftDoorBtn.addEventListener('click', () => { if (state.power > 0) state.leftDoorClosed = !state.leftDoorClosed; updateUI(); });
+      rightDoorBtn.addEventListener('click', () => { if (state.power > 0) state.rightDoorClosed = !state.rightDoorClosed; updateUI(); });
+      leftLightBtn.addEventListener('click', () => { if (state.power > 0) state.leftLightOn = !state.leftLightOn; updateUI(); });
+      rightLightBtn.addEventListener('click', () => { if (state.power > 0) state.rightLightOn = !state.rightLightOn; updateUI(); });
+      cameraBtn.addEventListener('click', () => { if (state.power > 0) state.cameraOpen = !state.cameraOpen; updateUI(); });
+      muteBtn.addEventListener('click', () => { state.muted = !state.muted; updateUI(); });
+      for (const btn of camButtons) {
+        btn.addEventListener('click', () => { setCamera(Number(btn.dataset.cam)); updateUI(); });
+      }
+      for (const btn of mapCamButtons) {
+        btn.addEventListener('click', () => { setCamera(Number(btn.dataset.camNode)); updateUI(); });
+      }
+
+      resetGame();
+      frame(performance.now());
+    })();
+  </script>
+</body>
+</html>
+
+

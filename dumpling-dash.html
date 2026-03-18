@@ -1,0 +1,59 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Dumpling Dash - Dumpling Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .game-wrap { max-width:900px; margin:28px auto; padding:20px; }
+    #game { width:100%; height:360px; background:#e6f7f6; display:block; border-radius:10px; }
+    .hud { display:flex; justify-content:space-between; align-items:center; margin:10px 0; }
+    .btn { display:inline-block; padding:8px 12px; border-radius:8px; background:#0ea5a4; color:white; text-decoration:none; }
+    .exit-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 50;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #d84b4b;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+  <a class="exit-btn" href="games.html">Exit</a>
+  <header class="site-header">
+    <div class="brand">
+      <div class="logo-placeholder">
+        <img class="brand-logo" src="images/ds-logo.jpeg" alt="Dumpling Studio logo">
+      </div>
+      <div>
+        <h1>Dumpling Studio</h1>
+        <p class="tagline">Dumpling Dash</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="game-wrap">
+    <div class="hud">
+      <div>
+        <a href="games.html" class="btn">Back</a>
+      </div>
+      <div>
+        Score: <span id="score">0</span>
+      </div>
+    </div>
+    <canvas id="game" width="900" height="360"></canvas>
+    <p>Press Space or Up to jump. Avoid obstacles. Press R to restart.</p>
+  </main>
+
+  <script src="dumpling-dash.js"></script>
+</body>
+</html>
+

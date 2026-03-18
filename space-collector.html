@@ -1,0 +1,906 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Space Collector - Dumpling Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { margin: 0; }
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background:
+        radial-gradient(circle at 25% 20%, rgba(70, 130, 255, 0.18), transparent 24%),
+        radial-gradient(circle at 78% 72%, rgba(139, 92, 246, 0.14), transparent 22%),
+        linear-gradient(180deg, #020316, #070a1f 55%, #050817);
+    }
+    .hud {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      color: #eaf3ff;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hud-pill {
+      background: rgba(15, 26, 56, 0.72);
+      border: 1px solid rgba(157, 194, 255, 0.28);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+    }
+    .center-ui {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      text-align: center;
+      z-index: 21;
+      width: min(94vw, 760px);
+      background: rgba(6, 10, 26, 0.92);
+      border: 1px solid rgba(153, 192, 255, 0.3);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .menu-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .menu-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .menu-credit {
+      margin-top: 10px;
+      color: #a5ffcf;
+      font-weight: 700;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0 12px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(157, 194, 255, 0.35);
+      background: rgba(24, 40, 77, 0.75);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .tab-btn.active {
+      border-color: #6be9ff;
+      box-shadow: 0 0 0 1px #6be9ff inset;
+    }
+    .pick-card {
+      text-align: left;
+      border: 1px solid rgba(157, 194, 255, 0.28);
+      background: rgba(17, 27, 56, 0.62);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+    }
+    .pick-card.active {
+      border-color: #6be9ff;
+      box-shadow: 0 0 0 1px #6be9ff inset;
+    }
+    .pick-title { font-weight: 700; margin-bottom: 6px; }
+    .pick-desc { color: #b8cae6; font-size: 13px; line-height: 1.35; }
+    button.play {
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.ghost {
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: #253357;
+      color: #fff;
+      border: 1px solid rgba(157, 194, 255, 0.3);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .muted { color: var(--muted); }
+    .footer-link {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      z-index: 22;
+    }
+    .exit-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 30;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #d84b4b;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    @media (max-width: 760px) {
+      .menu-grid { grid-template-columns: 1fr; }
+      .menu-grid.two { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a class="exit-btn" href="games.html">Exit</a>
+  <canvas id="gameCanvas"></canvas>
+
+  <div class="hud">
+    <div class="hud-pill">Score: <span id="score">0</span></div>
+    <div class="hud-pill">Lives: <span id="lives">3</span></div>
+    <div class="hud-pill">Level: <span id="level">1</span></div>
+    <div class="hud-pill">Ship: <span id="shipHud">Falcon</span></div>
+    <div class="hud-pill">Ability: <span id="abilityHud">Ready</span></div>
+    <div class="hud-pill">Combo: <span id="combo">x1.0</span></div>
+  </div>
+
+  <div class="center-ui" id="menu">
+    <div id="menuHome">
+      <h1 style="font-family:Orbitron, sans-serif; margin:0 0 8px">Space Collector</h1>
+      <p class="muted" style="margin:0 0 6px">Pick a ship, pick a level, then launch.</p>
+      <p class="muted" style="margin:0">Controls: Move with WASD/Arrows, use ability with Space.</p>
+      <div style="margin-top:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="play" id="startBtn" type="button">Start Mission</button>
+        <button class="ghost" id="shipsBtn" type="button">Ships</button>
+        <button class="ghost" id="levelsBtn" type="button">Levels</button>
+        <button class="ghost" id="upgradesBtn" type="button">Upgrades</button>
+      </div>
+      <p class="muted" id="selectionInfo" style="margin:12px 0 0"></p>
+      <p class="menu-credit">Credits: <span id="creditsValue">0</span></p>
+    </div>
+
+    <div id="shipsPanel" style="display:none">
+      <h2 style="margin:0 0 10px">Choose Ship</h2>
+      <div class="tabs">
+        <button id="shipsStandardTab" class="tab-btn active" type="button">Standard Fleet</button>
+        <button id="shipsAdvancedTab" class="tab-btn" type="button">Advanced Fleet</button>
+      </div>
+      <div class="menu-grid" id="shipsGrid"></div>
+      <div style="margin-top:12px"><button class="ghost" id="shipsBack" type="button">Back</button></div>
+    </div>
+
+    <div id="levelsPanel" style="display:none">
+      <h2 style="margin:0 0 10px">Choose Starting Level</h2>
+      <div class="menu-grid two" id="levelsGrid"></div>
+      <div style="margin-top:12px"><button class="ghost" id="levelsBack" type="button">Back</button></div>
+    </div>
+
+    <div id="upgradesPanel" style="display:none">
+      <h2 style="margin:0 0 10px">Upgrades</h2>
+      <p class="muted" style="margin:0 0 10px">Upgrade selected ship before launch.</p>
+      <div class="menu-grid" id="upgradesGrid"></div>
+      <div style="margin-top:12px"><button class="ghost" id="upgradesBack" type="button">Back</button></div>
+    </div>
+  </div>
+
+  <div class="center-ui" id="gameOver" style="display:none">
+    <h2 style="margin:0 0 10px">Game Over</h2>
+    <p class="muted" id="endScore"></p>
+    <button class="play" id="restartBtn" type="button">Play Again</button>
+  </div>
+
+  <p class="footer-link">Back to <a href="games.html" style="color:#fff; text-decoration:underline">Games</a></p>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const SHIPS = [
+      { id: 'falcon', name: 'Falcon', tier: 'standard', radius: 24, speed: 320, lives: 3, ability: 'dash', cooldown: 6.0, unlockCost: 0, desc: 'Balanced ship. Ability: Forward dash burst.' },
+      { id: 'comet', name: 'Comet', tier: 'standard', radius: 20, speed: 390, lives: 2, ability: 'phase', cooldown: 7.5, unlockCost: 0, desc: 'Fast and light. Ability: 2s phase immunity.' },
+      { id: 'titan', name: 'Titan', tier: 'standard', radius: 30, speed: 260, lives: 4, ability: 'pulse', cooldown: 8.5, unlockCost: 0, desc: 'Heavy tank. Ability: Shockwave clears nearby asteroids.' },
+      { id: 'nova', name: 'Nova', tier: 'advanced', radius: 22, speed: 355, lives: 3, ability: 'dash', cooldown: 5.5, unlockCost: 800, desc: 'Fast striker. Sharper dash cooldown.' },
+      { id: 'warden', name: 'Warden', tier: 'advanced', radius: 32, speed: 250, lives: 5, ability: 'pulse', cooldown: 8.0, unlockCost: 1000, desc: 'Fortress ship. Big hull and stronger pulse runs.' },
+      { id: 'specter', name: 'Specter', tier: 'advanced', radius: 21, speed: 370, lives: 3, ability: 'phase', cooldown: 6.8, unlockCost: 1200, desc: 'Stealth interceptor. Long survive windows.' }
+    ];
+    const UPGRADE_MAX = 4;
+    const UPGRADE_DEFS = [
+      { key: 'engine', name: 'Engine', desc: '+7% ship speed per level', baseCost: 140 },
+      { key: 'hull', name: 'Hull', desc: '+1 life per level', baseCost: 180 },
+      { key: 'reactor', name: 'Reactor', desc: '-8% ability cooldown per level', baseCost: 170 },
+    ];
+    const STORAGE_KEY = 'space_collector_progress_v1';
+
+    const LEVEL_PRESETS = [
+      { id: 1, label: 'Sector 1', desc: 'Easy start, slower waves.' },
+      { id: 3, label: 'Sector 3', desc: 'Medium pace, denser hazards.' },
+      { id: 5, label: 'Sector 5', desc: 'Hard start, intense asteroid flow.' },
+      { id: 8, label: 'Sector 8', desc: 'Expert challenge from launch.' }
+    ];
+
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+      buildStars();
+    }
+    addEventListener('resize', resize);
+
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
+    const comboEl = document.getElementById('combo');
+    const shipHudEl = document.getElementById('shipHud');
+    const abilityHudEl = document.getElementById('abilityHud');
+    const creditsValue = document.getElementById('creditsValue');
+    const menu = document.getElementById('menu');
+    const menuHome = document.getElementById('menuHome');
+    const shipsPanel = document.getElementById('shipsPanel');
+    const levelsPanel = document.getElementById('levelsPanel');
+    const upgradesPanel = document.getElementById('upgradesPanel');
+    const shipsGrid = document.getElementById('shipsGrid');
+    const levelsGrid = document.getElementById('levelsGrid');
+    const upgradesGrid = document.getElementById('upgradesGrid');
+    const selectionInfo = document.getElementById('selectionInfo');
+    const gameOver = document.getElementById('gameOver');
+    const endScore = document.getElementById('endScore');
+
+    const startBtn = document.getElementById('startBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const shipsBtn = document.getElementById('shipsBtn');
+    const levelsBtn = document.getElementById('levelsBtn');
+    const upgradesBtn = document.getElementById('upgradesBtn');
+    const shipsBack = document.getElementById('shipsBack');
+    const levelsBack = document.getElementById('levelsBack');
+    const upgradesBack = document.getElementById('upgradesBack');
+    const shipsStandardTab = document.getElementById('shipsStandardTab');
+    const shipsAdvancedTab = document.getElementById('shipsAdvancedTab');
+
+    let selectedShipId = 'falcon';
+    let selectedStartLevel = 1;
+    let selectedShipView = 'standard';
+    let credits = 0;
+    let unlockedShips = new Set(['falcon', 'comet', 'titan']);
+    let shipUpgrades = {};
+
+    let player = {
+      x: 0,
+      y: 0,
+      r: 24,
+      speed: 320,
+      tilt: 0,
+      invuln: 0,
+      thrust: 0,
+      abilityCooldown: 0,
+      abilityCooldownBase: 6.0,
+      abilityName: 'dash',
+      dashTime: 0,
+      phaseTime: 0,
+      pulseTime: 0,
+      lastMoveX: 0,
+      lastMoveY: -1,
+    };
+
+    let keys = {};
+    let orbs = [];
+    let asteroids = [];
+    let popups = [];
+    let stars = [];
+
+    let score = 0;
+    let lives = 3;
+    let level = 1;
+    let combo = 1;
+    let comboTimer = 0;
+    let running = false;
+
+    let orbTimer = 0;
+    let asteroidTimer = 0;
+    let levelTimer = 0;
+    let last = 0;
+
+    function activeShip() {
+      return SHIPS.find((s) => s.id === selectedShipId) || SHIPS[0];
+    }
+
+    function getShipUpgrades(shipId) {
+      if (!shipUpgrades[shipId]) shipUpgrades[shipId] = { engine: 0, hull: 0, reactor: 0 };
+      return shipUpgrades[shipId];
+    }
+
+    function getUpgradeCost(level, baseCost) {
+      return Math.round(baseCost * Math.pow(1.45, level));
+    }
+
+    function saveProgress() {
+      const payload = {
+        selectedShipId,
+        selectedStartLevel,
+        selectedShipView,
+        credits,
+        unlockedShips: Array.from(unlockedShips),
+        shipUpgrades,
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        // ignore storage issues
+      }
+    }
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (typeof data.selectedShipId === 'string') selectedShipId = data.selectedShipId;
+        if (typeof data.selectedStartLevel === 'number') selectedStartLevel = data.selectedStartLevel;
+        if (data.selectedShipView === 'standard' || data.selectedShipView === 'advanced') selectedShipView = data.selectedShipView;
+        if (typeof data.credits === 'number') credits = Math.max(0, Math.floor(data.credits));
+        if (Array.isArray(data.unlockedShips)) unlockedShips = new Set(data.unlockedShips);
+        if (data.shipUpgrades && typeof data.shipUpgrades === 'object') shipUpgrades = data.shipUpgrades;
+      } catch (e) {
+        // ignore broken save
+      }
+      unlockedShips.add('falcon');
+      unlockedShips.add('comet');
+      unlockedShips.add('titan');
+      if (!unlockedShips.has(selectedShipId)) selectedShipId = 'falcon';
+    }
+
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    function buildStars() {
+      stars = [];
+      for (let i = 0; i < 180; i++) {
+        stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, s: rand(0.6, 2.4), d: rand(0.2, 1.2), t: Math.random() * Math.PI * 2 });
+      }
+    }
+
+    function updateSelectionInfo() {
+      const s = activeShip();
+      const up = getShipUpgrades(s.id);
+      if (selectionInfo) selectionInfo.textContent = 'Ship: ' + s.name + ' | Start: Sector ' + selectedStartLevel + ' | Ability: ' + s.ability + ' | Upgrades E' + up.engine + ' H' + up.hull + ' R' + up.reactor;
+      if (creditsValue) creditsValue.textContent = credits;
+    }
+
+    function renderShips() {
+      shipsGrid.innerHTML = '';
+      if (shipsStandardTab && shipsAdvancedTab) {
+        shipsStandardTab.classList.toggle('active', selectedShipView === 'standard');
+        shipsAdvancedTab.classList.toggle('active', selectedShipView === 'advanced');
+      }
+      for (const s of SHIPS.filter((x) => x.tier === selectedShipView)) {
+        const unlocked = unlockedShips.has(s.id);
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'pick-card' + (s.id === selectedShipId ? ' active' : '');
+        const lockText = unlocked ? 'Unlocked' : 'Locked (' + s.unlockCost + ' cr)';
+        card.innerHTML = '<div class="pick-title">' + s.name + ' - ' + lockText + '</div><div class="pick-desc">' + s.desc + '<br>Speed: ' + s.speed + ', Lives: ' + s.lives + '</div>';
+        card.addEventListener('click', () => {
+          if (!unlockedShips.has(s.id)) {
+            if (credits >= s.unlockCost) {
+              credits -= s.unlockCost;
+              unlockedShips.add(s.id);
+            } else {
+              addPopup(canvas.width / 2, 80, 'Need ' + (s.unlockCost - credits) + ' more credits', '#ffb0b0');
+              return;
+            }
+          }
+          selectedShipId = s.id;
+          renderShips();
+          renderUpgrades();
+          updateSelectionInfo();
+          saveProgress();
+        });
+        shipsGrid.appendChild(card);
+      }
+    }
+
+    function renderLevels() {
+      levelsGrid.innerHTML = '';
+      for (const p of LEVEL_PRESETS) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'pick-card' + (p.id === selectedStartLevel ? ' active' : '');
+        card.innerHTML = '<div class="pick-title">' + p.label + '</div><div class="pick-desc">' + p.desc + '</div>';
+        card.addEventListener('click', () => {
+          selectedStartLevel = p.id;
+          renderLevels();
+          updateSelectionInfo();
+          saveProgress();
+        });
+        levelsGrid.appendChild(card);
+      }
+    }
+
+    function renderUpgrades() {
+      if (!upgradesGrid) return;
+      upgradesGrid.innerHTML = '';
+      const s = activeShip();
+      const up = getShipUpgrades(s.id);
+      for (const def of UPGRADE_DEFS) {
+        const lvl = up[def.key] || 0;
+        const maxed = lvl >= UPGRADE_MAX;
+        const cost = maxed ? 0 : getUpgradeCost(lvl, def.baseCost);
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'pick-card';
+        card.innerHTML = '<div class="pick-title">' + def.name + ' L' + lvl + '/' + UPGRADE_MAX + '</div><div class="pick-desc">' + def.desc + '<br>' + (maxed ? 'MAXED' : ('Cost: ' + cost + ' credits')) + '</div>';
+        card.addEventListener('click', () => {
+          if (maxed) return;
+          if (credits < cost) {
+            addPopup(canvas.width / 2, 80, 'Not enough credits', '#ffb0b0');
+            return;
+          }
+          credits -= cost;
+          up[def.key] = lvl + 1;
+          renderUpgrades();
+          renderShips();
+          updateSelectionInfo();
+          saveProgress();
+        });
+        upgradesGrid.appendChild(card);
+      }
+    }
+
+    function showPanel(panel) {
+      menuHome.style.display = panel === 'home' ? 'block' : 'none';
+      shipsPanel.style.display = panel === 'ships' ? 'block' : 'none';
+      levelsPanel.style.display = panel === 'levels' ? 'block' : 'none';
+      upgradesPanel.style.display = panel === 'upgrades' ? 'block' : 'none';
+    }
+
+    function updateHUD() {
+      scoreEl.textContent = score;
+      livesEl.textContent = lives;
+      levelEl.textContent = level;
+      comboEl.textContent = 'x' + combo.toFixed(1);
+      shipHudEl.textContent = activeShip().name;
+      abilityHudEl.textContent = player.abilityCooldown <= 0 ? 'Ready' : player.abilityName + ' ' + player.abilityCooldown.toFixed(1) + 's';
+    }
+
+    function spawnOrb() {
+      const isGold = Math.random() < Math.min(0.12 + level * 0.01, 0.35);
+      const r = isGold ? 11 : 9;
+      orbs.push({ x: rand(48, canvas.width - 48), y: rand(48, canvas.height - 48), r, type: isGold ? 'gold' : 'normal', vx: rand(-40, 40), vy: rand(-40, 40), pulse: rand(0, Math.PI * 2) });
+    }
+
+    function spawnAsteroid() {
+      const side = Math.floor(rand(0, 4));
+      const size = rand(18, 48) + level * 0.7;
+      let x = 0, y = 0, vx = 0, vy = 0;
+      const speed = rand(70, 180) + level * 11;
+
+      if (side === 0) { x = -size; y = rand(30, canvas.height - 30); vx = speed; vy = rand(-40, 40); }
+      if (side === 1) { x = canvas.width + size; y = rand(30, canvas.height - 30); vx = -speed; vy = rand(-40, 40); }
+      if (side === 2) { x = rand(30, canvas.width - 30); y = -size; vx = rand(-40, 40); vy = speed; }
+      if (side === 3) { x = rand(30, canvas.width - 30); y = canvas.height + size; vx = rand(-40, 40); vy = -speed; }
+
+      asteroids.push({ x, y, r: size, vx, vy, spin: rand(-1.8, 1.8), a: rand(0, Math.PI * 2), rock: [rand(0.78, 1.2), rand(0.76, 1.16), rand(0.8, 1.22), rand(0.75, 1.18), rand(0.82, 1.15), rand(0.78, 1.2)] });
+    }
+
+    function addPopup(x, y, text, color) {
+      popups.push({ x, y, text, color, ttl: 0.9 });
+    }
+
+    function applySelectedShip() {
+      const s = activeShip();
+      const up = getShipUpgrades(s.id);
+      const speedMul = 1 + (up.engine * 0.07);
+      const cooldownMul = Math.max(0.45, 1 - (up.reactor * 0.08));
+      player.r = s.radius + Math.min(3, up.hull);
+      player.speed = Math.round(s.speed * speedMul);
+      player.abilityName = s.ability;
+      player.abilityCooldownBase = s.cooldown * cooldownMul;
+      lives = s.lives + up.hull;
+    }
+
+    function reset() {
+      applySelectedShip();
+      player.x = canvas.width / 2;
+      player.y = canvas.height / 2;
+      player.invuln = 0;
+      player.tilt = 0;
+      player.thrust = 0;
+      player.abilityCooldown = 0;
+      player.dashTime = 0;
+      player.phaseTime = 0;
+      player.pulseTime = 0;
+      player.lastMoveX = 0;
+      player.lastMoveY = -1;
+
+      orbs = [];
+      asteroids = [];
+      popups = [];
+
+      score = 0;
+      level = selectedStartLevel;
+      combo = 1;
+      comboTimer = 0;
+
+      orbTimer = 0.35;
+      asteroidTimer = Math.max(0.3, 1.2 - level * 0.05);
+      levelTimer = 0;
+
+      for (let i = 0; i < 8 + Math.floor(level * 0.7); i++) spawnOrb();
+      for (let i = 0; i < Math.max(0, Math.floor((level - 1) / 2)); i++) spawnAsteroid();
+      updateHUD();
+    }
+
+    function start() {
+      running = true;
+      menu.style.display = 'none';
+      gameOver.style.display = 'none';
+      showPanel('home');
+      reset();
+      last = performance.now();
+    }
+
+    function end() {
+      running = false;
+      const reward = Math.max(30, Math.floor(score * 0.14) + level * 14);
+      credits += reward;
+      saveProgress();
+      updateSelectionInfo();
+      gameOver.style.display = 'block';
+      endScore.textContent = 'Final score: ' + score + ' | Reached level ' + level + ' | Ship: ' + activeShip().name + ' | Reward: +' + reward + ' credits';
+    }
+
+    function activateAbility() {
+      const s = activeShip();
+      if (!running || player.abilityCooldown > 0) return;
+
+      if (s.ability === 'dash') {
+        player.dashTime = 0.24;
+        player.invuln = Math.max(player.invuln, 0.25);
+        player.abilityCooldown = player.abilityCooldownBase;
+        addPopup(player.x, player.y - 24, 'Dash!', '#99efff');
+      } else if (s.ability === 'phase') {
+        player.phaseTime = 2.0;
+        player.invuln = Math.max(player.invuln, 2.0);
+        player.abilityCooldown = player.abilityCooldownBase;
+        addPopup(player.x, player.y - 24, 'Phase!', '#d3beff');
+      } else if (s.ability === 'pulse') {
+        player.pulseTime = 0.35;
+        player.abilityCooldown = player.abilityCooldownBase;
+        let removed = 0;
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+          const a = asteroids[i];
+          const d = Math.hypot(a.x - player.x, a.y - player.y);
+          if (d < 180 + a.r) {
+            asteroids.splice(i, 1);
+            removed++;
+          }
+        }
+        if (removed > 0) {
+          score += removed * 8;
+          addPopup(player.x, player.y - 24, 'Pulse x' + removed, '#ffe394');
+        } else {
+          addPopup(player.x, player.y - 24, 'Pulse!', '#ffe394');
+        }
+      }
+      updateHUD();
+    }
+
+    startBtn.addEventListener('click', start);
+    restartBtn.addEventListener('click', start);
+    shipsBtn.addEventListener('click', () => showPanel('ships'));
+    levelsBtn.addEventListener('click', () => showPanel('levels'));
+    upgradesBtn.addEventListener('click', () => showPanel('upgrades'));
+    shipsBack.addEventListener('click', () => showPanel('home'));
+    levelsBack.addEventListener('click', () => showPanel('home'));
+    upgradesBack.addEventListener('click', () => showPanel('home'));
+    shipsStandardTab.addEventListener('click', () => {
+      selectedShipView = 'standard';
+      renderShips();
+      saveProgress();
+    });
+    shipsAdvancedTab.addEventListener('click', () => {
+      selectedShipView = 'advanced';
+      renderShips();
+      saveProgress();
+    });
+
+    addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      keys[k] = true;
+      if (k === ' ') {
+        e.preventDefault();
+        activateAbility();
+      }
+    });
+    addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+    function circlesCollide(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return Math.hypot(dx, dy) < a.r + b.r;
+    }
+
+    function update(dt) {
+      if (!running) return;
+
+      const up = keys['arrowup'] || keys['w'];
+      const down = keys['arrowdown'] || keys['s'];
+      const left = keys['arrowleft'] || keys['a'];
+      const right = keys['arrowright'] || keys['d'];
+
+      const ix = (right ? 1 : 0) - (left ? 1 : 0);
+      const iy = (down ? 1 : 0) - (up ? 1 : 0);
+      const len = Math.hypot(ix, iy) || 1;
+      const nx = ix / len;
+      const ny = iy / len;
+
+      if (Math.abs(ix) + Math.abs(iy) > 0) {
+        player.lastMoveX = nx;
+        player.lastMoveY = ny;
+      }
+
+      let speedMul = 1;
+      if (player.dashTime > 0) {
+        player.dashTime -= dt;
+        speedMul = 2.7;
+      }
+      if (player.phaseTime > 0) player.phaseTime -= dt;
+      if (player.pulseTime > 0) player.pulseTime -= dt;
+
+      const mx = nx * player.speed * speedMul;
+      const my = ny * player.speed * speedMul;
+      player.x += mx * dt;
+      player.y += my * dt;
+      player.thrust = Math.min(1, Math.abs(mx) + Math.abs(my) > 0 ? 1 : Math.max(0, player.thrust - dt * 3));
+      player.tilt += (((ix || 0) * 0.4) - player.tilt) * Math.min(1, dt * 10);
+
+      player.x = Math.max(player.r, Math.min(canvas.width - player.r, player.x));
+      player.y = Math.max(player.r, Math.min(canvas.height - player.r, player.y));
+
+      if (player.invuln > 0) player.invuln -= dt;
+      if (player.abilityCooldown > 0) player.abilityCooldown -= dt;
+
+      comboTimer -= dt;
+      if (comboTimer <= 0) combo = 1;
+
+      levelTimer += dt;
+      if (levelTimer >= 12) {
+        levelTimer = 0;
+        level += 1;
+        spawnAsteroid();
+      }
+
+      orbTimer -= dt;
+      asteroidTimer -= dt;
+      const orbInterval = Math.max(0.45, 1.25 - level * 0.035);
+      const asteroidInterval = Math.max(0.22, 1.08 - level * 0.04);
+
+      if (orbTimer <= 0) { spawnOrb(); orbTimer = orbInterval; }
+      if (asteroidTimer <= 0) { spawnAsteroid(); asteroidTimer = asteroidInterval; }
+
+      for (let i = orbs.length - 1; i >= 0; i--) {
+        const o = orbs[i];
+        o.x += o.vx * dt;
+        o.y += o.vy * dt;
+        o.pulse += dt * 3;
+        if (o.x < o.r || o.x > canvas.width - o.r) o.vx *= -1;
+        if (o.y < o.r || o.y > canvas.height - o.r) o.vy *= -1;
+
+        if (circlesCollide(player, o)) {
+          orbs.splice(i, 1);
+          const base = o.type === 'gold' ? 18 : 6;
+          combo = Math.min(5, combo + 0.25);
+          comboTimer = 2.2;
+          const gained = Math.round(base * combo);
+          score += gained;
+          addPopup(o.x, o.y, '+' + gained, o.type === 'gold' ? '#ffd665' : '#8be8ff');
+          updateHUD();
+        }
+      }
+
+      for (let i = asteroids.length - 1; i >= 0; i--) {
+        const a = asteroids[i];
+        a.x += a.vx * dt;
+        a.y += a.vy * dt;
+        a.a += a.spin * dt;
+
+        if (a.x < -140 || a.x > canvas.width + 140 || a.y < -140 || a.y > canvas.height + 140) {
+          asteroids.splice(i, 1);
+          continue;
+        }
+
+        if (player.invuln <= 0 && circlesCollide(player, a)) {
+          asteroids.splice(i, 1);
+          lives -= 1;
+          combo = 1;
+          comboTimer = 0;
+          player.invuln = 1.1;
+          addPopup(player.x, player.y - 24, '-1 life', '#ff9393');
+          updateHUD();
+          if (lives <= 0) end();
+        }
+      }
+
+      for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+        p.ttl -= dt;
+        p.y -= 30 * dt;
+        if (p.ttl <= 0) popups.splice(i, 1);
+      }
+
+      updateHUD();
+    }
+
+    function drawStars(dt) {
+      for (const s of stars) {
+        s.y += (8 + level * 1.6) * s.d * dt;
+        s.x += Math.sin(performance.now() * 0.0005 + s.t) * 0.12;
+        if (s.y > canvas.height + 3) { s.y = -3; s.x = Math.random() * canvas.width; }
+        const alpha = 0.28 + Math.sin(performance.now() * 0.0016 + s.t) * 0.25;
+        ctx.fillStyle = 'rgba(225,236,255,' + Math.max(0.08, alpha).toFixed(3) + ')';
+        ctx.fillRect(s.x, s.y, s.s, s.s);
+      }
+    }
+
+    function drawOrb(o) {
+      const glow = o.type === 'gold' ? '255,214,101' : '139,232,255';
+      const c1 = o.type === 'gold' ? '#ffd665' : '#8be8ff';
+      const c2 = o.type === 'gold' ? '#ffc145' : '#d3f7ff';
+      const pulse = 1 + Math.sin(o.pulse) * 0.12;
+
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(' + glow + ',0.18)';
+      ctx.arc(o.x, o.y, o.r * 2.1 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      const g = ctx.createRadialGradient(o.x - o.r * 0.35, o.y - o.r * 0.35, 1, o.x, o.y, o.r);
+      g.addColorStop(0, c2);
+      g.addColorStop(1, c1);
+      ctx.beginPath();
+      ctx.fillStyle = g;
+      ctx.arc(o.x, o.y, o.r * pulse, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawAsteroid(a) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.a);
+
+      ctx.beginPath();
+      for (let i = 0; i < a.rock.length; i++) {
+        const ang = (i / a.rock.length) * Math.PI * 2;
+        const rr = a.r * a.rock[i];
+        const px = Math.cos(ang) * rr;
+        const py = Math.sin(ang) * rr;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#9d6447';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(a.r * 0.22, -a.r * 0.2, a.r * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = '#7d4f38';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(-a.r * 0.15, a.r * 0.22, a.r * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawPlayer() {
+      const blink = player.invuln > 0 && Math.floor(player.invuln * 12) % 2 === 0;
+      if (blink) return;
+
+      ctx.save();
+      ctx.translate(player.x, player.y);
+      ctx.rotate(player.tilt);
+
+      if (player.thrust > 0.05) {
+        const flameLen = 20 + Math.sin(performance.now() * 0.025) * 5;
+        ctx.beginPath();
+        ctx.moveTo(-10, 12);
+        ctx.lineTo(0, flameLen);
+        ctx.lineTo(10, 12);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,145,64,0.85)';
+        ctx.fill();
+      }
+
+      if (player.pulseTime > 0) {
+        ctx.beginPath();
+        ctx.arc(0, 0, 180 * (0.4 + player.pulseTime), 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,230,150,0.35)';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+
+      const shipTint = activeShip().id === 'titan' ? '#ffd9a6' : activeShip().id === 'comet' ? '#d8d4ff' : '#d8e9ff';
+      const wingTint = activeShip().id === 'titan' ? '#f0b780' : activeShip().id === 'comet' ? '#8f9dff' : '#69a7ff';
+
+      ctx.beginPath();
+      ctx.fillStyle = shipTint;
+      ctx.moveTo(0, -player.r - 8);
+      ctx.lineTo(player.r * 0.92, player.r * 0.9);
+      ctx.lineTo(0, player.r * 0.45);
+      ctx.lineTo(-player.r * 0.92, player.r * 0.9);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = wingTint;
+      ctx.moveTo(0, -player.r * 0.78);
+      ctx.lineTo(player.r * 0.46, player.r * 0.18);
+      ctx.lineTo(-player.r * 0.46, player.r * 0.18);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#a7dcff';
+      ctx.fillRect(-player.r * 0.95, player.r * 0.45, player.r * 0.7, 6);
+      ctx.fillRect(player.r * 0.25, player.r * 0.45, player.r * 0.7, 6);
+
+      ctx.fillStyle = '#83f1ff';
+      ctx.beginPath();
+      ctx.arc(0, -2, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function draw(dt) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawStars(dt);
+      for (const o of orbs) drawOrb(o);
+      for (const a of asteroids) drawAsteroid(a);
+      drawPlayer();
+
+      for (const p of popups) {
+        ctx.fillStyle = p.color;
+        ctx.font = 'bold 16px system-ui, Segoe UI, Roboto';
+        ctx.fillText(p.text, p.x, p.y);
+      }
+    }
+
+    function loop(t) {
+      const dt = Math.min(0.05, (t - last) / 1000 || 0.016);
+      last = t;
+      update(dt);
+      draw(dt);
+      requestAnimationFrame(loop);
+    }
+
+    loadProgress();
+    renderShips();
+    renderLevels();
+    renderUpgrades();
+    updateSelectionInfo();
+    showPanel('home');
+    resize();
+    updateHUD();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
+
+

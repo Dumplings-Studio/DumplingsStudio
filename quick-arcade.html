@@ -1,0 +1,618 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Quick Arcade</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#071126;
+      --bg2:#111b38;
+      --panel:rgba(8,14,30,.84);
+      --line:rgba(255,255,255,.14);
+      --text:#f5f7ff;
+      --muted:#aab4d6;
+      --accent:#4de0ff;
+      --accent2:#8b5cf6;
+      --good:#30e08a;
+      --bad:#ff6b7a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(77,224,255,.14), transparent 45%),
+        radial-gradient(circle at 80% 20%, rgba(139,92,246,.16), transparent 48%),
+        linear-gradient(180deg,var(--bg2),var(--bg1));
+      min-height:100vh;
+    }
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px 16px 28px;
+    }
+    .topbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .title{
+      margin:0;
+      font-family:Orbitron,sans-serif;
+      font-size:clamp(1.25rem, 2vw + .7rem, 2rem);
+      letter-spacing:.03em;
+    }
+    .subtitle{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+    .menu{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:10px;
+      text-decoration:none;
+      font-weight:600;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.3)}
+    .btn.primary{
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#071126;
+      border:none;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1.4fr .8fr;
+      gap:16px;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      backdrop-filter: blur(6px);
+      padding:14px;
+    }
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:12px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(77,224,255,.11), transparent 52%),
+        linear-gradient(180deg, #0e1730, #090f20);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .hud{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin:12px 0 0;
+    }
+    .stat{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      background:rgba(255,255,255,.03);
+    }
+    .stat .k{font-size:.8rem;color:var(--muted)}
+    .stat .v{font-size:1.1rem;font-weight:700;margin-top:3px}
+    .status{
+      margin-top:10px;
+      min-height:20px;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+    .details h2{
+      margin:0 0 8px;
+      font-family:Orbitron,sans-serif;
+      font-size:1.05rem;
+    }
+    .details p, .details li{
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .details ul{
+      margin:0;
+      padding-left:18px;
+    }
+    .pill{
+      display:inline-block;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 10px;
+      margin:0 8px 8px 0;
+      color:var(--text);
+      background:rgba(255,255,255,.04);
+      font-size:.85rem;
+    }
+    @media (max-width: 860px){
+      .grid{grid-template-columns:1fr}
+      .hud{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title" id="gameTitle">Quick Arcade</h1>
+        <p class="subtitle" id="gameSub">Click the target before time runs out.</p>
+      </div>
+      <div class="menu" aria-label="Game menu">
+        <button class="btn primary" id="startBtn" type="button">Start</button>
+        <button class="btn" id="restartBtn" type="button">Restart</button>
+        <a class="btn" href="games.html">Exit</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="panel" aria-label="Game">
+        <canvas id="gameCanvas" width="760" height="460"></canvas>
+        <div class="hud" aria-live="polite">
+          <div class="stat"><div class="k">Score</div><div class="v" id="scoreValue">0</div></div>
+          <div class="stat"><div class="k">Time</div><div class="v" id="timeValue">30.0s</div></div>
+          <div class="stat"><div class="k">Best</div><div class="v" id="bestValue">0</div></div>
+        </div>
+        <div class="status" id="statusText">Press Start to begin.</div>
+      </section>
+
+      <aside class="panel details" id="details" aria-label="Details">
+        <h2>Details</h2>
+        <div id="tagList"></div>
+        <p id="detailDesc">A quick reflex mini-game generated for this card.</p>
+        <ul>
+          <li>Objective: click the moving target as many times as possible.</li>
+          <li>Misses reduce score and briefly speed up the target.</li>
+          <li>Each card slot has a different color theme and difficulty seed.</li>
+        </ul>
+        <p id="controlNote">Controls: mouse or touch.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const slot = params.get('slot') || 'game-demo';
+      const gameTitle = params.get('title') || ('Arcade ' + slot.toUpperCase());
+      const seedNum = Array.from(slot).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const scoreEl = document.getElementById('scoreValue');
+      const timeEl = document.getElementById('timeValue');
+      const bestEl = document.getElementById('bestValue');
+      const statusEl = document.getElementById('statusText');
+      const titleEl = document.getElementById('gameTitle');
+      const subEl = document.getElementById('gameSub');
+      const descEl = document.getElementById('detailDesc');
+      const tagsEl = document.getElementById('tagList');
+      const controlNoteEl = document.getElementById('controlNote');
+
+      titleEl.textContent = gameTitle;
+      document.title = gameTitle + ' - Dumpling Studio';
+
+      const themes = [
+        ['#4de0ff', '#8b5cf6'],
+        ['#30e08a', '#4de0ff'],
+        ['#ffb84d', '#ff6b7a'],
+        ['#f472b6', '#60a5fa'],
+        ['#22d3ee', '#a78bfa']
+      ];
+      const theme = themes[seedNum % themes.length];
+      document.documentElement.style.setProperty('--accent', theme[0]);
+      document.documentElement.style.setProperty('--accent2', theme[1]);
+
+      const difficulty = (seedNum % 5) + 1;
+      const duration = 30;
+      const modes = ['target', 'dodge', 'catcher'];
+      const modeParam = params.get('mode');
+      const mode = modes.indexOf(modeParam) >= 0 ? modeParam : modes[seedNum % modes.length];
+      const modeMeta = {
+        target: {
+          label: 'Target Rush',
+          desc: 'Click the moving target as many times as possible before time runs out.',
+          control: 'Controls: mouse/touch tap the moving target.',
+          tags: ['Reflex', 'Aim']
+        },
+        dodge: {
+          label: 'Dodge Field',
+          desc: 'Move your orb and survive incoming hazards. Score increases while you stay alive.',
+          control: 'Controls: move mouse/touch to steer your orb.',
+          tags: ['Survival', 'Avoid']
+        },
+        catcher: {
+          label: 'Sky Catcher',
+          desc: 'Move the paddle and catch falling crystals. Misses reduce your score.',
+          control: 'Controls: move mouse/touch left-right to catch drops.',
+          tags: ['Catcher', 'Timing']
+        }
+      };
+
+      subEl.textContent = modeMeta[mode].label + ' for ' + slot + '.';
+      descEl.textContent = gameTitle + ' - ' + modeMeta[mode].desc;
+      controlNoteEl.textContent = modeMeta[mode].control;
+
+      const bestKey = 'dumpling_quick_arcade_best_' + slot;
+      let best = Number(localStorage.getItem(bestKey) || 0);
+      bestEl.textContent = String(best);
+
+      tagsEl.innerHTML = '';
+      [modeMeta[mode].label, 'Difficulty ' + difficulty, slot]
+        .concat(modeMeta[mode].tags)
+        .forEach((tag) => {
+          const span = document.createElement('span');
+          span.className = 'pill';
+          span.textContent = tag;
+          tagsEl.appendChild(span);
+        });
+
+      const state = {
+        running: false,
+        score: 0,
+        startTime: 0,
+        timeLeft: duration,
+        lastTs: 0,
+        pointer: { x: canvas.width / 2, y: canvas.height / 2 },
+        target: { x: 180, y: 140, r: 22, vx: 220, vy: 180 },
+        player: { x: canvas.width / 2, y: canvas.height / 2, r: 14 + (6 - difficulty) },
+        hazards: [],
+        paddle: { x: canvas.width / 2 - 42, y: canvas.height - 36, w: 84, h: 12 },
+        drops: [],
+        spawnTimer: 0
+      };
+
+      function setScore(nextScore) {
+        state.score = Math.max(0, Math.round(nextScore));
+        scoreEl.textContent = String(state.score);
+      }
+
+      function resetTargetMode() {
+        state.target.x = 140 + (seedNum % 220);
+        state.target.y = 120 + (seedNum % 120);
+        state.target.r = Math.max(13, 24 - difficulty);
+        state.target.vx = 170 + difficulty * 28;
+        state.target.vy = 140 + difficulty * 22;
+      }
+
+      function resetDodgeMode() {
+        state.player.x = canvas.width / 2;
+        state.player.y = canvas.height / 2;
+        state.player.r = Math.max(10, 18 - difficulty);
+        state.hazards = [];
+        const count = 3 + difficulty;
+        for (let i = 0; i < count; i += 1) {
+          const angle = (Math.PI * 2 * i) / count;
+          state.hazards.push({
+            x: 60 + ((seedNum + i * 91) % (canvas.width - 120)),
+            y: 50 + ((seedNum + i * 73) % (canvas.height - 100)),
+            r: 10 + (i % 3) + Math.max(0, difficulty - 2),
+            vx: Math.cos(angle) * (120 + difficulty * 18 + (i % 2) * 25),
+            vy: Math.sin(angle) * (120 + difficulty * 16 + (i % 3) * 18)
+          });
+        }
+      }
+
+      function resetCatcherMode() {
+        state.paddle.w = Math.max(54, 96 - difficulty * 8);
+        state.paddle.h = 12;
+        state.paddle.x = (canvas.width - state.paddle.w) / 2;
+        state.paddle.y = canvas.height - 34;
+        state.drops = [];
+        state.spawnTimer = 0;
+      }
+
+      function resetRound() {
+        setScore(0);
+        state.timeLeft = duration;
+        if (mode === 'target') resetTargetMode();
+        if (mode === 'dodge') resetDodgeMode();
+        if (mode === 'catcher') resetCatcherMode();
+        timeEl.textContent = duration.toFixed(1) + 's';
+      }
+
+      function startGame() {
+        resetRound();
+        state.running = true;
+        state.startTime = performance.now();
+        state.lastTs = state.startTime;
+        statusEl.textContent = 'Go!';
+      }
+
+      function endGame() {
+        state.running = false;
+        statusEl.textContent = 'Time up. Press Restart to play again.';
+        if (state.score > best) {
+          best = state.score;
+          localStorage.setItem(bestKey, String(best));
+          bestEl.textContent = String(best);
+          statusEl.textContent = 'New best score: ' + best + '!';
+        }
+      }
+
+      function drawBackground() {
+        const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        g.addColorStop(0, '#101933');
+        g.addColorStop(1, '#090f1f');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.strokeStyle = '#cfe5ff';
+        for (let x = 0; x < canvas.width; x += 32) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 32) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawTargetMode() {
+        const t = state.target;
+        ctx.save();
+        ctx.shadowBlur = 10 + Math.sin(performance.now() * 0.01) * 2;
+        ctx.shadowColor = theme[0];
+        const grad = ctx.createRadialGradient(t.x - 4, t.y - 4, 2, t.x, t.y, t.r);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, theme[0]);
+        grad.addColorStop(1, theme[1]);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,255,255,.8)';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawDodgeMode() {
+        ctx.save();
+        state.hazards.forEach((h) => {
+          ctx.fillStyle = 'rgba(255,107,122,0.92)';
+          ctx.shadowColor = '#ff6b7a';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = theme[0];
+        ctx.beginPath();
+        ctx.arc(state.player.x, state.player.y, state.player.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,255,255,.75)';
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawCatcherMode() {
+        const p = state.paddle;
+        ctx.save();
+        ctx.fillStyle = theme[0];
+        ctx.shadowColor = theme[0];
+        ctx.shadowBlur = 12;
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.shadowBlur = 0;
+        state.drops.forEach((d) => {
+          ctx.fillStyle = d.good ? theme[1] : '#ff6b7a';
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      function drawMode() {
+        if (mode === 'target') drawTargetMode();
+        if (mode === 'dodge') drawDodgeMode();
+        if (mode === 'catcher') drawCatcherMode();
+      }
+
+      function drawOverlay() {
+        if (state.running) return;
+        ctx.save();
+        ctx.fillStyle = 'rgba(2,6,16,.55)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.font = '700 28px Orbitron, sans-serif';
+        ctx.fillText(modeMeta[mode].label, canvas.width / 2, canvas.height / 2 - 6);
+        ctx.font = '500 14px Inter, sans-serif';
+        ctx.fillStyle = '#c8d2ee';
+        ctx.fillText(modeMeta[mode].control.replace('Controls: ', ''), canvas.width / 2, canvas.height / 2 + 24);
+        ctx.restore();
+      }
+
+      function updateTargetMode(dt) {
+        const t = state.target;
+        t.x += t.vx * dt;
+        t.y += t.vy * dt;
+        if (t.x < t.r || t.x > canvas.width - t.r) t.vx *= -1;
+        if (t.y < t.r || t.y > canvas.height - t.r) t.vy *= -1;
+        t.x = Math.max(t.r, Math.min(canvas.width - t.r, t.x));
+        t.y = Math.max(t.r, Math.min(canvas.height - t.r, t.y));
+      }
+
+      function updateDodgeMode(dt) {
+        const smoothing = Math.min(1, dt * 10);
+        state.player.x += (state.pointer.x - state.player.x) * smoothing;
+        state.player.y += (state.pointer.y - state.player.y) * smoothing;
+        state.player.x = Math.max(state.player.r, Math.min(canvas.width - state.player.r, state.player.x));
+        state.player.y = Math.max(state.player.r, Math.min(canvas.height - state.player.r, state.player.y));
+
+        state.hazards.forEach((h) => {
+          h.x += h.vx * dt;
+          h.y += h.vy * dt;
+          if (h.x < h.r || h.x > canvas.width - h.r) h.vx *= -1;
+          if (h.y < h.r || h.y > canvas.height - h.r) h.vy *= -1;
+          h.x = Math.max(h.r, Math.min(canvas.width - h.r, h.x));
+          h.y = Math.max(h.r, Math.min(canvas.height - h.r, h.y));
+
+          const hit = Math.hypot(h.x - state.player.x, h.y - state.player.y) <= h.r + state.player.r;
+          if (hit) {
+            setScore(state.score - 2);
+            h.x = 30 + ((h.x + seedNum * 3) % (canvas.width - 60));
+            h.y = 30 + ((h.y + seedNum * 5) % (canvas.height - 60));
+            h.vx *= -1;
+            h.vy *= -1;
+            statusEl.textContent = 'Hit by hazard!';
+          }
+        });
+
+        setScore(state.score + dt * (4 + difficulty));
+      }
+
+      function spawnDrop() {
+        const badChance = 0.18 + difficulty * 0.04;
+        const good = ((seedNum + Math.floor(performance.now())) % 1000) / 1000 > badChance;
+        state.drops.push({
+          x: 20 + ((seedNum + Math.floor(Math.random() * 9999)) % (canvas.width - 40)),
+          y: -8,
+          r: good ? 8 : 10,
+          vy: 160 + difficulty * 28 + Math.random() * 40,
+          good: good
+        });
+      }
+
+      function updateCatcherMode(dt) {
+        state.paddle.x = Math.max(0, Math.min(canvas.width - state.paddle.w, state.pointer.x - state.paddle.w / 2));
+        state.spawnTimer -= dt;
+        if (state.spawnTimer <= 0) {
+          spawnDrop();
+          state.spawnTimer = Math.max(0.18, 0.48 - difficulty * 0.04);
+        }
+
+        const p = state.paddle;
+        const nextDrops = [];
+        state.drops.forEach((d) => {
+          d.y += d.vy * dt;
+          const caught =
+            d.y + d.r >= p.y &&
+            d.y - d.r <= p.y + p.h &&
+            d.x >= p.x &&
+            d.x <= p.x + p.w;
+          if (caught) {
+            setScore(state.score + (d.good ? 2 : -3));
+            statusEl.textContent = d.good ? 'Catch!' : 'Bad crystal!';
+            return;
+          }
+          if (d.y - d.r > canvas.height) {
+            if (d.good) {
+              setScore(state.score - 1);
+              statusEl.textContent = 'Missed one.';
+            }
+            return;
+          }
+          nextDrops.push(d);
+        });
+        state.drops = nextDrops;
+      }
+
+      function updateMode(dt) {
+        if (mode === 'target') updateTargetMode(dt);
+        if (mode === 'dodge') updateDodgeMode(dt);
+        if (mode === 'catcher') updateCatcherMode(dt);
+      }
+
+      function step(ts) {
+        const dt = Math.min(0.05, (ts - state.lastTs) / 1000 || 0);
+        state.lastTs = ts;
+
+        if (state.running) {
+          state.timeLeft = Math.max(0, duration - (ts - state.startTime) / 1000);
+          timeEl.textContent = state.timeLeft.toFixed(1) + 's';
+          updateMode(dt);
+          if (state.timeLeft <= 0) endGame();
+        }
+
+        drawBackground();
+        drawMode();
+        drawOverlay();
+        requestAnimationFrame(step);
+      }
+
+      function getCanvasPoint(ev) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (ev.clientX - rect.left) * (canvas.width / rect.width),
+          y: (ev.clientY - rect.top) * (canvas.height / rect.height)
+        };
+      }
+
+      function handlePointerMove(ev) {
+        const p = getCanvasPoint(ev);
+        state.pointer.x = p.x;
+        state.pointer.y = p.y;
+      }
+
+      function handlePointerDown(ev) {
+        const p = getCanvasPoint(ev);
+        state.pointer.x = p.x;
+        state.pointer.y = p.y;
+
+        if (!state.running) {
+          statusEl.textContent = 'Press Start to begin.';
+          return;
+        }
+
+        if (mode !== 'target') return;
+
+        const t = state.target;
+        const hit = Math.hypot(p.x - t.x, p.y - t.y) <= t.r + 3;
+        if (hit) {
+          setScore(state.score + 1);
+          t.vx *= 1.03;
+          t.vy *= 1.03;
+          t.x = Math.max(t.r, Math.min(canvas.width - t.r, p.x + ((seedNum % 21) - 10)));
+          t.y = Math.max(t.r, Math.min(canvas.height - t.r, p.y + ((seedNum % 15) - 7)));
+          statusEl.textContent = 'Hit!';
+        } else {
+          setScore(state.score - 1);
+          t.vx *= 1.05;
+          t.vy *= 1.05;
+          statusEl.textContent = 'Miss!';
+        }
+      }
+
+      document.getElementById('startBtn').addEventListener('click', startGame);
+      document.getElementById('restartBtn').addEventListener('click', startGame);
+      canvas.addEventListener('pointermove', handlePointerMove);
+      canvas.addEventListener('pointerdown', handlePointerDown);
+
+      resetRound();
+      requestAnimationFrame(step);
+      statusEl.textContent = 'Press Start to begin.';
+    }());
+  </script>
+</body>
+</html>
+
+

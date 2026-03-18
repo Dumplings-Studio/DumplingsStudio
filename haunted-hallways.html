@@ -1,0 +1,221 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Haunted Hallways</title>
+  <style>
+    :root{--bg:#06070b;--panel:#131726;--line:#2d3658;--text:#dfe7ff;--accent:#58ffe0;--danger:#ff5a7a}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 50% 10%,#19203b 0,#0b0d16 45%,#06070b 100%);color:var(--text);font-family:Trebuchet MS,Segoe UI,sans-serif;display:grid;place-items:center;min-height:100vh;padding:16px}
+    .wrap{width:min(96vw,900px)}
+    h1{margin:4px 0 8px;font-size:clamp(1.6rem,3vw,2.5rem);letter-spacing:.04em;text-transform:uppercase}
+    .hud{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+    canvas{display:block;width:100%;aspect-ratio:16/10;background:#05060b;border:1px solid var(--line);border-radius:14px;margin-top:12px}
+    .hint{opacity:.85;font-size:.95rem;margin:8px 2px 0}
+    .exit{position:fixed;right:12px;top:12px;background:#d84b4b;color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700}
+    .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.72);backdrop-filter:blur(2px);z-index:20;padding:16px}
+    .overlay.open{display:flex}
+    .panel{width:min(92vw,560px);background:#12192e;border:1px solid #3a4978;border-radius:14px;padding:20px;text-align:center;box-shadow:0 18px 48px #0009}
+    .panel h2{margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+    .panel p{margin:0 0 14px;opacity:.9}
+    .btn{border:1px solid #4f79c0;border-radius:10px;padding:10px 16px;background:linear-gradient(#2f5aa0,#23457d);color:#fff;font-weight:700;cursor:pointer}
+  </style>
+</head>
+<body>
+  <a class="exit" href="games.html">Exit</a>
+  <div class="wrap">
+    <h1>Haunted Hallways</h1>
+    <div class="hud">
+      <div>Energy: <b id="energy">100</b>%</div>
+      <div>Time Survived: <b id="timer">0</b>s</div>
+      <div>Status: <b id="status">Hide from the shadows</b></div>
+    </div>
+    <canvas id="game" width="960" height="600"></canvas>
+    <p class="hint">Move: WASD / Arrow keys. Reach glowing safe zones to recharge. Avoid ghosts. Press R to restart.</p>
+  </div>
+  <div id="menuOverlay" class="overlay open">
+    <div class="panel">
+      <h2>Haunted Hallways</h2>
+      <p>Find safe glowing zones, keep your energy up, and avoid ghosts.</p>
+      <button id="startBtn" class="btn" type="button">Start</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const energyEl = document.getElementById('energy');
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+    const menuOverlay = document.getElementById('menuOverlay');
+    const startBtn = document.getElementById('startBtn');
+
+    const walls = [
+      {x:120,y:0,w:24,h:420},{x:280,y:180,w:24,h:420},{x:440,y:0,w:24,h:360},
+      {x:600,y:220,w:24,h:380},{x:760,y:0,w:24,h:400},{x:0,y:140,w:300,h:22},
+      {x:240,y:300,w:320,h:22},{x:520,y:120,w:440,h:22},{x:420,y:470,w:300,h:22}
+    ];
+    const safeZones = [
+      {x:35,y:35,r:26},{x:920,y:540,r:26},{x:880,y:70,r:22}
+    ];
+
+    let player, ghosts, keys, energy, alive, startTime, started;
+
+    function reset(startNow=true){
+      player={x:70,y:530,r:13,s:3.2};
+      ghosts=[
+        {x:900,y:80,r:12,vx:-2.1,vy:1.7,phase:0},
+        {x:520,y:520,r:12,vx:2.2,vy:-1.3,phase:1.3},
+        {x:760,y:300,r:12,vx:-1.8,vy:2.1,phase:2.2}
+      ];
+      keys={};
+      energy=100;
+      alive=true;
+      started=startNow;
+      startTime=performance.now();
+      statusEl.textContent='Hide from the shadows';
+      energyEl.textContent='100';
+      timerEl.textContent='0';
+    }
+
+    addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(!alive&&e.key.toLowerCase()==='r')reset(true);});
+    addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+    startBtn.addEventListener('click',()=>{menuOverlay.classList.remove('open');reset(true);});
+
+    function circleRectCollide(cx,cy,r,rect){
+      const nx=Math.max(rect.x,Math.min(cx,rect.x+rect.w));
+      const ny=Math.max(rect.y,Math.min(cy,rect.y+rect.h));
+      const dx=cx-nx,dy=cy-ny;
+      return dx*dx+dy*dy<=r*r;
+    }
+
+    function movePlayer(){
+      let dx=0,dy=0;
+      if(keys['arrowup']||keys['w'])dy-=1;
+      if(keys['arrowdown']||keys['s'])dy+=1;
+      if(keys['arrowleft']||keys['a'])dx-=1;
+      if(keys['arrowright']||keys['d'])dx+=1;
+      if(dx||dy){
+        const len=Math.hypot(dx,dy)||1;
+        dx=dx/len*player.s;
+        dy=dy/len*player.s;
+      }
+      player.x=Math.max(player.r,Math.min(canvas.width-player.r,player.x+dx));
+      player.y=Math.max(player.r,Math.min(canvas.height-player.r,player.y+dy));
+      for(const w of walls){
+        if(circleRectCollide(player.x,player.y,player.r,w)){
+          player.x-=dx; player.y-=dy;
+          break;
+        }
+      }
+    }
+
+    function updateGhosts(t){
+      ghosts.forEach(g=>{
+        const mood = 1 + Math.sin(t*0.001 + g.phase)*0.35;
+        g.x += g.vx*mood;
+        g.y += g.vy*mood;
+        if(g.x<g.r||g.x>canvas.width-g.r)g.vx*=-1;
+        if(g.y<g.r||g.y>canvas.height-g.r)g.vy*=-1;
+        for(const w of walls){
+          if(circleRectCollide(g.x,g.y,g.r,w)){
+            g.vx*=-1; g.vy*=-1; g.x+=g.vx*2; g.y+=g.vy*2; break;
+          }
+        }
+      });
+    }
+
+    function update(t){
+      if(!started || !alive)return;
+      movePlayer();
+      updateGhosts(t);
+
+      let inSafe=false;
+      for(const s of safeZones){
+        const d=Math.hypot(player.x-s.x,player.y-s.y);
+        if(d<=s.r+player.r){inSafe=true;break;}
+      }
+
+      if(inSafe){
+        energy=Math.min(100,energy+0.25);
+        statusEl.textContent='Safe zone charging';
+      } else {
+        energy=Math.max(0,energy-0.08);
+        statusEl.textContent='Running in darkness';
+      }
+
+      for(const g of ghosts){
+        const d=Math.hypot(player.x-g.x,player.y-g.y);
+        if(d<player.r+g.r+2){energy=Math.max(0,energy-0.55);}
+      }
+
+      if(energy<=0){
+        alive=false;
+        statusEl.textContent='Caught by the haunted night';
+      }
+
+      energyEl.textContent=energy.toFixed(0);
+      timerEl.textContent=((t-startTime)/1000|0).toString();
+    }
+
+    function draw(t){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      const g = ctx.createLinearGradient(0,0,0,canvas.height);
+      g.addColorStop(0,'#10162c'); g.addColorStop(1,'#05070c');
+      ctx.fillStyle=g;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      ctx.strokeStyle='rgba(255,255,255,0.04)';
+      ctx.lineWidth=1;
+      for(let i=0;i<28;i++){
+        const y=i*24 + (t*0.02%24);
+        ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();
+      }
+
+      for(const s of safeZones){
+        const pulse = 0.65 + Math.sin(t*0.004 + s.x)*0.25;
+        ctx.fillStyle=`rgba(88,255,224,${pulse})`;
+        ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+      }
+
+      ctx.fillStyle='#222a44';
+      walls.forEach(w=>ctx.fillRect(w.x,w.y,w.w,w.h));
+
+      ghosts.forEach((ghost,i)=>{
+        const a = 0.4 + Math.sin(t*0.006+i)*0.25;
+        ctx.fillStyle=`rgba(255,90,122,${a})`;
+        ctx.beginPath();ctx.arc(ghost.x,ghost.y,ghost.r+6,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(255,210,220,0.9)';
+        ctx.beginPath();ctx.arc(ghost.x,ghost.y,ghost.r,0,Math.PI*2);ctx.fill();
+      });
+
+      ctx.fillStyle='rgba(166,233,255,0.35)';
+      ctx.beginPath();ctx.arc(player.x,player.y,player.r+8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#baf1ff';
+      ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();
+
+      if(!alive){
+        ctx.fillStyle='rgba(0,0,0,.6)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle='#fff';
+        ctx.textAlign='center';
+        ctx.font='bold 58px Trebuchet MS';
+        ctx.fillText('YOU WERE FOUND',canvas.width/2,canvas.height/2-10);
+        ctx.font='24px Trebuchet MS';
+        ctx.fillText('Press R to restart',canvas.width/2,canvas.height/2+34);
+      }
+    }
+
+    function loop(t){update(t);draw(t);requestAnimationFrame(loop);} 
+
+    reset(false);
+    statusEl.textContent='Press Start to enter the hallways';
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
+
+

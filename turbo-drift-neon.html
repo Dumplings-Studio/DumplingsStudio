@@ -1,0 +1,732 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+  <title>Turbo Drift Neon</title>
+  <style>
+    :root {
+      --bg: #050814;
+      --panel: #101a30;
+      --border: #32466d;
+      --text: #ecf2ff;
+      --accent: #66ccff;
+      --ok: #52d291;
+      --warn: #ff7b9b;
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 15% 10%, #0c1e44, var(--bg) 45%);
+      color: var(--text);
+      font-family: Verdana, Segoe UI, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .wrap {
+      width: min(96vw, 900px);
+      text-align: center;
+    }
+    h1 {
+      margin: 6px 0 8px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .hud b {
+      color: #ffffff;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(#061024, #0a1630);
+      border: 1px solid #2a3f67;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px #0008;
+    }
+    .exit {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      background: #d84b4b;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 8, 20, 0.72);
+      backdrop-filter: blur(3px);
+      z-index: 20;
+      padding: 16px;
+    }
+    #menuOverlay {
+      background:
+        radial-gradient(circle at 20% 18%, rgba(36, 225, 255, 0.34), transparent 28%),
+        radial-gradient(circle at 82% 26%, rgba(255, 76, 194, 0.3), transparent 30%),
+        radial-gradient(circle at 50% 86%, rgba(111, 78, 255, 0.22), transparent 34%),
+        linear-gradient(180deg, #070b1a 0%, #04070f 100%);
+      backdrop-filter: none;
+    }
+    .overlay.open {
+      display: flex;
+    }
+    .panel {
+      width: min(92vw, 680px);
+      background: rgba(14, 23, 44, 0.96);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 20px 60px #0009;
+      text-align: left;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    button {
+      border: 1px solid #45689c;
+      border-radius: 10px;
+      background: linear-gradient(#21457a, #17375f);
+      color: #fff;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.alt {
+      background: linear-gradient(#2e3545, #242b39);
+      border-color: #5a6578;
+    }
+    button.ok {
+      background: linear-gradient(#2f7c57, #246544);
+      border-color: #62ba86;
+    }
+    button:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+    }
+    .cards {
+      display: grid;
+      gap: 10px;
+    }
+    .card {
+      background: #0f1b34;
+      border: 1px solid #37517f;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 1px solid #ffffff66;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .mini {
+      opacity: 0.85;
+      font-size: 13px;
+      margin: 3px 0 0;
+    }
+    .menu-scene {
+      margin: 12px 0 6px;
+      border: 1px solid #3f5682;
+      border-radius: 12px;
+      padding: 12px;
+      background:
+        radial-gradient(circle at 80% 18%, rgba(255, 75, 170, 0.22), transparent 36%),
+        radial-gradient(circle at 22% 30%, rgba(52, 230, 255, 0.2), transparent 38%),
+        linear-gradient(180deg, #141f3a, #0a1121 70%);
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35), 0 0 20px rgba(88, 140, 255, 0.15);
+    }
+    .menu-scene h3 {
+      margin: 0 0 10px;
+      text-align: center;
+      letter-spacing: 0.08em;
+      color: #9ad8ff;
+      text-shadow: 0 0 12px rgba(95, 199, 255, 0.45);
+    }
+    .neon-road {
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid #415b89;
+      background:
+        repeating-linear-gradient(90deg, rgba(168, 210, 255, 0.7) 0px, rgba(168, 210, 255, 0.7) 10px, transparent 10px, transparent 22px),
+        linear-gradient(90deg, #151f36, #0e162a);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 0 18px rgba(100, 160, 255, 0.2);
+      margin-bottom: 10px;
+      animation: laneMove 1.2s linear infinite;
+    }
+    .menu-cars {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .menu-car {
+      border: 1px solid #4d6998;
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 12px;
+      color: #def3ff;
+      background:
+        linear-gradient(180deg, rgba(58, 112, 189, 0.28), rgba(16, 34, 60, 0.8)),
+        radial-gradient(circle at 50% 0%, rgba(110, 210, 255, 0.3), transparent 50%);
+      box-shadow: 0 0 12px rgba(92, 173, 255, 0.22);
+    }
+    .menu-car::before {
+      content: "";
+      display: block;
+      width: 44px;
+      height: 16px;
+      margin: 0 auto 6px;
+      border-radius: 8px;
+      border: 1px solid #a8e8ff;
+      background: linear-gradient(90deg, #38dfff, #ff5fbe);
+      box-shadow: 0 0 10px rgba(73, 239, 255, 0.45);
+    }
+    .menu-car.alt::before {
+      background: linear-gradient(90deg, #8eff74, #3de6ff);
+    }
+    .menu-car.warn::before {
+      background: linear-gradient(90deg, #ffd56b, #ff7c58);
+    }
+    @keyframes laneMove {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 22px 0, 0 0; }
+    }
+  </style>
+</head>
+<body>
+  <a class="exit" href="games.html">Exit</a>
+
+  <div class="wrap">
+    <h1>Turbo Drift Neon</h1>
+    <div class="hud">
+      <div>Level: <b id="level">1</b></div>
+      <div>Goal: <b id="goal">0</b></div>
+      <div>Score: <b id="score">0</b></div>
+      <div>Speed: <b id="speed">1.0x</b></div>
+      <div>Coins: <b id="coins">0</b></div>
+      <div>Best: <b id="best">0</b></div>
+    </div>
+    <canvas id="game" width="960" height="540"></canvas>
+  </div>
+
+  <div class="overlay open" id="menuOverlay">
+    <div class="panel">
+      <h2>Turbo Drift Neon</h2>
+      <p>Drift through traffic and beat each level target. Every win gives more coins for better cars.</p>
+      <div class="menu-scene">
+        <h3>Neon Garage</h3>
+        <div class="neon-road"></div>
+        <div class="menu-cars">
+          <div class="menu-car">Turbo Core</div>
+          <div class="menu-car alt">Street Pulse</div>
+          <div class="menu-car warn">Drift Blaze</div>
+        </div>
+      </div>
+      <p class="mini">Controls: <b>A/D</b> or <b>Left/Right</b> to switch lanes.</p>
+      <div class="actions">
+        <button id="startBtn" class="ok">Start Level</button>
+        <button id="shopBtn">Cars / Shop</button>
+        <button id="menuExitBtn" class="alt" type="button">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="shopOverlay">
+    <div class="panel">
+      <h2>Car Shop</h2>
+      <p>Coins: <b id="shopCoins">0</b></p>
+
+      <h3>Skins</h3>
+      <div class="cards" id="skins"></div>
+
+      <h3 style="margin-top:14px">Upgrades</h3>
+      <div class="cards" id="upgrades"></div>
+
+      <div class="actions">
+        <button id="backFromShop" class="alt">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const c = document.getElementById('game');
+    const x = c.getContext('2d');
+
+    const ui = {
+      level: document.getElementById('level'),
+      goal: document.getElementById('goal'),
+      score: document.getElementById('score'),
+      speed: document.getElementById('speed'),
+      coins: document.getElementById('coins'),
+      best: document.getElementById('best'),
+      shopCoins: document.getElementById('shopCoins'),
+      menuOverlay: document.getElementById('menuOverlay'),
+      shopOverlay: document.getElementById('shopOverlay'),
+      startBtn: document.getElementById('startBtn'),
+      shopBtn: document.getElementById('shopBtn'),
+      menuExitBtn: document.getElementById('menuExitBtn'),
+      backFromShop: document.getElementById('backFromShop'),
+      skins: document.getElementById('skins'),
+      upgrades: document.getElementById('upgrades')
+    };
+
+    const lanes = [260, 400, 540, 680];
+    const view = { playerY: 510, playerW: 58, playerH: 92, trafficW: 56, trafficH: 88, drawScale: 0.78 };
+
+    const skinCatalog = [
+      { id: 'blue', name: 'Neon Blue', color: '#65b7ff', price: 0 },
+      { id: 'sunset', name: 'Sunset Rush', color: '#ff8f57', price: 90 },
+      { id: 'lime', name: 'Lime Storm', color: '#7dff66', price: 150 },
+      { id: 'magenta', name: 'Magenta Volt', color: '#ff64d8', price: 240 }
+    ];
+
+    const upgradeCatalog = [
+      { id: 'handling', name: 'Handling Kit', baseCost: 120, max: 5, desc: 'Sharper lane switching.' },
+      { id: 'engine', name: 'Engine Boost', baseCost: 180, max: 5, desc: 'Higher top speed and score gain.' }
+    ];
+
+    const save = {
+      best: Number(localStorage.getItem('turboBest') || 0),
+      coins: Number(localStorage.getItem('turboCoins') || 0),
+      level: Number(localStorage.getItem('turboLevel') || 1),
+      selectedSkin: localStorage.getItem('turboSelectedSkin') || 'blue',
+      ownedSkins: JSON.parse(localStorage.getItem('turboOwnedSkins') || '["blue"]'),
+      upgrades: JSON.parse(localStorage.getItem('turboUpgrades') || '{"handling":0,"engine":0}')
+    };
+
+    let state = 'menu';
+    let laneIndex = 1;
+    let car = { x: lanes[laneIndex], y: view.playerY, w: view.playerW, h: view.playerH };
+    let obs = [];
+    let score = 0;
+    let speed = 1;
+    let tick = 0;
+    let levelWon = false;
+
+    function clampSave() {
+      if (!Array.isArray(save.ownedSkins) || !save.ownedSkins.length) save.ownedSkins = ['blue'];
+      if (!save.ownedSkins.includes('blue')) save.ownedSkins.push('blue');
+      if (!skinCatalog.some(s => s.id === save.selectedSkin)) save.selectedSkin = 'blue';
+      if (!save.ownedSkins.includes(save.selectedSkin)) save.selectedSkin = 'blue';
+      if (!save.upgrades || typeof save.upgrades !== 'object') save.upgrades = { handling: 0, engine: 0 };
+      save.upgrades.handling = Math.max(0, Math.min(5, Number(save.upgrades.handling || 0)));
+      save.upgrades.engine = Math.max(0, Math.min(5, Number(save.upgrades.engine || 0)));
+      save.level = Math.max(1, Number(save.level || 1));
+      save.coins = Math.max(0, Number(save.coins || 0));
+      save.best = Math.max(0, Number(save.best || 0));
+    }
+
+    function persist() {
+      localStorage.setItem('turboBest', String(save.best));
+      localStorage.setItem('turboCoins', String(save.coins));
+      localStorage.setItem('turboLevel', String(save.level));
+      localStorage.setItem('turboSelectedSkin', save.selectedSkin);
+      localStorage.setItem('turboOwnedSkins', JSON.stringify(save.ownedSkins));
+      localStorage.setItem('turboUpgrades', JSON.stringify(save.upgrades));
+    }
+
+    function currentGoal() {
+      return 620 + (save.level - 1) * 260;
+    }
+
+    function levelReward() {
+      return 70 + save.level * 45;
+    }
+
+    function handlingFactor() {
+      return 0.23 + save.upgrades.handling * 0.03;
+    }
+
+    function engineFactor() {
+      return save.upgrades.engine * 0.15;
+    }
+
+    function getSelectedSkin() {
+      return skinCatalog.find(s => s.id === save.selectedSkin) || skinCatalog[0];
+    }
+
+    function uiRefresh() {
+      ui.level.textContent = save.level;
+      ui.goal.textContent = currentGoal();
+      ui.score.textContent = Math.floor(score);
+      ui.speed.textContent = speed.toFixed(1) + 'x';
+      ui.coins.textContent = save.coins;
+      ui.best.textContent = save.best;
+      ui.shopCoins.textContent = save.coins;
+      ui.startBtn.textContent = 'Start Level ' + save.level;
+    }
+
+    function setOverlay(menuOpen, shopOpen) {
+      ui.menuOverlay.classList.toggle('open', !!menuOpen);
+      ui.shopOverlay.classList.toggle('open', !!shopOpen);
+    }
+
+    function showMenu() {
+      state = 'menu';
+      setOverlay(true, false);
+      uiRefresh();
+    }
+
+    function showShop() {
+      state = 'shop';
+      setOverlay(false, true);
+      renderShop();
+      uiRefresh();
+    }
+
+    function startLevel() {
+      laneIndex = 1;
+      car = { x: lanes[laneIndex], y: view.playerY, w: view.playerW, h: view.playerH };
+      obs = [];
+      score = 0;
+      speed = 1;
+      tick = 0;
+      levelWon = false;
+      state = 'playing';
+      setOverlay(false, false);
+      uiRefresh();
+    }
+
+    function crashToMenu() {
+      state = 'crashed';
+      setOverlay(true, false);
+      ui.startBtn.textContent = 'Retry Level ' + save.level;
+    }
+
+    function winLevel() {
+      if (levelWon) return;
+      levelWon = true;
+      const reward = levelReward();
+      save.coins += reward;
+      save.level += 1;
+      persist();
+      uiRefresh();
+      state = 'won';
+      setOverlay(true, false);
+      const panel = ui.menuOverlay.querySelector('.panel');
+      panel.innerHTML = '' +
+        '<h2>Level Complete</h2>' +
+        '<p>You won level ' + (save.level - 1) + ' and earned <b>' + reward + ' coins</b>.</p>' +
+        '<p class="mini">Next level is faster and has a higher score goal.</p>' +
+        '<div class="actions">' +
+          '<button id="nextLevelBtn" class="ok">Start Level ' + save.level + '</button>' +
+          '<button id="toShopAfterWin">Cars / Shop</button>' +
+        '</div>';
+      document.getElementById('nextLevelBtn').addEventListener('click', () => {
+        rebuildMenuPanel();
+        startLevel();
+      });
+      document.getElementById('toShopAfterWin').addEventListener('click', () => {
+        rebuildMenuPanel();
+        showShop();
+      });
+    }
+
+    function rebuildMenuPanel() {
+      const panel = ui.menuOverlay.querySelector('.panel');
+      panel.innerHTML = '' +
+        '<h2>Turbo Drift Neon</h2>' +
+        '<p>Drift through traffic and beat each level target. Every win gives more coins for better cars.</p>' +
+        '<div class="menu-scene">' +
+          '<h3>Neon Garage</h3>' +
+          '<div class="neon-road"></div>' +
+          '<div class="menu-cars">' +
+            '<div class="menu-car">Turbo Core</div>' +
+            '<div class="menu-car alt">Street Pulse</div>' +
+            '<div class="menu-car warn">Drift Blaze</div>' +
+          '</div>' +
+        '</div>' +
+        '<p class="mini">Controls: <b>A/D</b> or <b>Left/Right</b> to switch lanes.</p>' +
+        '<div class="actions">' +
+          '<button id="startBtn" class="ok">Start Level</button>' +
+          '<button id="shopBtn">Cars / Shop</button>' +
+          '<button id="menuExitBtn" class="alt" type="button">Exit</button>' +
+        '</div>';
+      ui.startBtn = document.getElementById('startBtn');
+      ui.shopBtn = document.getElementById('shopBtn');
+      ui.menuExitBtn = document.getElementById('menuExitBtn');
+      ui.startBtn.addEventListener('click', startLevel);
+      ui.shopBtn.addEventListener('click', showShop);
+      ui.menuExitBtn.addEventListener('click', () => { window.location.href = 'games.html'; });
+      uiRefresh();
+    }
+
+    function renderShop() {
+      ui.skins.innerHTML = '';
+      ui.upgrades.innerHTML = '';
+
+      for (const skin of skinCatalog) {
+        const owned = save.ownedSkins.includes(skin.id);
+        const selected = save.selectedSkin === skin.id;
+        const row = document.createElement('div');
+        row.className = 'card';
+
+        const left = document.createElement('div');
+        left.innerHTML = '<span class="swatch" style="background:' + skin.color + '"></span><b>' + skin.name + '</b><div class="mini">' + (skin.price === 0 ? 'Default skin' : ('Price: ' + skin.price + ' coins')) + '</div>';
+
+        const action = document.createElement('button');
+        if (selected) {
+          action.textContent = 'Selected';
+          action.disabled = true;
+        } else if (owned) {
+          action.textContent = 'Select';
+          action.className = 'ok';
+          action.addEventListener('click', () => {
+            save.selectedSkin = skin.id;
+            persist();
+            renderShop();
+            uiRefresh();
+          });
+        } else {
+          action.textContent = 'Buy';
+          action.disabled = save.coins < skin.price;
+          action.addEventListener('click', () => {
+            if (save.coins < skin.price) return;
+            save.coins -= skin.price;
+            save.ownedSkins.push(skin.id);
+            save.selectedSkin = skin.id;
+            persist();
+            renderShop();
+            uiRefresh();
+          });
+        }
+
+        row.appendChild(left);
+        row.appendChild(action);
+        ui.skins.appendChild(row);
+      }
+
+      for (const up of upgradeCatalog) {
+        const lvl = Number(save.upgrades[up.id] || 0);
+        const maxed = lvl >= up.max;
+        const price = up.baseCost + lvl * up.baseCost;
+
+        const row = document.createElement('div');
+        row.className = 'card';
+
+        const left = document.createElement('div');
+        left.innerHTML = '<b>' + up.name + '</b><div class="mini">' + up.desc + ' | Level ' + lvl + '/' + up.max + '</div>';
+
+        const action = document.createElement('button');
+        if (maxed) {
+          action.textContent = 'Maxed';
+          action.disabled = true;
+        } else {
+          action.textContent = 'Upgrade (' + price + ')';
+          action.disabled = save.coins < price;
+          action.addEventListener('click', () => {
+            if (save.coins < price) return;
+            save.coins -= price;
+            save.upgrades[up.id] = lvl + 1;
+            persist();
+            renderShop();
+            uiRefresh();
+          });
+        }
+
+        row.appendChild(left);
+        row.appendChild(action);
+        ui.upgrades.appendChild(row);
+      }
+    }
+
+    function spawn() {
+      const idx = (Math.random() * lanes.length) | 0;
+      const kind = Math.random() < 0.16 ? 'boost' : 'enemy';
+      obs.push({ x: lanes[idx], y: -240, w: view.trafficW, h: view.trafficH, kind });
+    }
+
+    function collide(a, b) {
+      return Math.abs(a.x - b.x) < (a.w + b.w) * 0.44 && Math.abs(a.y - b.y) < (a.h + b.h) * 0.45;
+    }
+
+    function update() {
+      if (state !== 'playing') return;
+
+      tick++;
+      const levelMul = 1.25 + (save.level - 1) * 0.14;
+      const topSpeed = 3.0 + levelMul * 0.3 + engineFactor() * 0.55;
+      car.x += (lanes[laneIndex] - car.x) * handlingFactor();
+      speed = Math.min(topSpeed, 1 + score / (760 - save.level * 24 + save.upgrades.engine * 18));
+
+      const spawnGap = Math.max(11, 50 - levelMul * 8 - engineFactor() * 2.2);
+      if (tick % Math.floor(spawnGap) === 0) spawn();
+
+      for (let i = obs.length - 1; i >= 0; i--) {
+        const o = obs[i];
+        o.y += (5.1 + levelMul * 0.45) * speed;
+
+        if (collide(car, o)) {
+          if (o.kind === 'boost') {
+            score += 110 + save.level * 8;
+            obs.splice(i, 1);
+            continue;
+          }
+          crashToMenu();
+          return;
+        }
+
+        if (o.y > c.height + 130) {
+          obs.splice(i, 1);
+          score += (11 + save.level * 1.2 + save.upgrades.engine * 0.8);
+        }
+      }
+
+      if (score > save.best) {
+        save.best = Math.floor(score);
+        persist();
+      }
+
+      if (score >= currentGoal()) {
+        winLevel();
+        return;
+      }
+
+      uiRefresh();
+    }
+
+    function drawRoad(t) {
+      x.clearRect(0, 0, c.width, c.height);
+      const g = x.createLinearGradient(0, 0, 0, c.height);
+      g.addColorStop(0, '#0b1730');
+      g.addColorStop(1, '#070c18');
+      x.fillStyle = g;
+      x.fillRect(0, 0, c.width, c.height);
+
+      x.fillStyle = '#0e1322';
+      x.fillRect(180, 0, 600, c.height);
+
+      for (let i = 0; i < 4; i++) {
+        const lx = 220 + i * 140;
+        for (let y = -60; y < c.height + 60; y += 88) {
+          const yy = y + (t * 0.35 * Math.max(speed, 1)) % 88;
+          x.fillStyle = 'rgba(176,214,255,.6)';
+          x.fillRect(lx, yy, 4, 54);
+        }
+      }
+
+      for (let s = 0; s < 20; s++) {
+        const px = (s * 149 + t * 0.12) % c.width;
+        const py = (s * 83 + t * 0.08) % c.height;
+        x.fillStyle = 'rgba(180,210,255,.2)';
+        x.fillRect(px, py, 2, 2);
+      }
+    }
+
+    function drawCar(cx, cy, color, scale = 1) {
+      x.save();
+      x.translate(cx, cy);
+      x.scale(scale, scale);
+      x.fillStyle = color;
+      x.fillRect(-36, -56, 72, 112);
+      x.fillStyle = '#d9eeff';
+      x.fillRect(-24, -40, 48, 24);
+      x.fillStyle = '#0d1527';
+      x.fillRect(-32, -50, 12, 18);
+      x.fillRect(20, -50, 12, 18);
+      x.fillRect(-32, 32, 12, 18);
+      x.fillRect(20, 32, 12, 18);
+      x.fillStyle = 'rgba(100,235,255,.55)';
+      x.fillRect(-30, 44, 60, 6);
+      x.restore();
+    }
+
+    function render(t) {
+      drawRoad(t);
+      for (const o of obs) {
+        drawCar(o.x, o.y, o.kind === 'boost' ? '#5ef0b2' : '#ff6d8e', view.drawScale);
+      }
+      drawCar(car.x, car.y, getSelectedSkin().color, view.drawScale);
+
+      if (state === 'menu' || state === 'shop' || state === 'won' || state === 'crashed') {
+        x.fillStyle = 'rgba(0,0,0,.35)';
+        x.fillRect(0, 0, c.width, c.height);
+      }
+
+      if (state === 'crashed') {
+        x.fillStyle = '#fff';
+        x.textAlign = 'center';
+        x.font = 'bold 44px Verdana';
+        x.fillText('CRASHED', c.width / 2, c.height / 2 - 10);
+        x.font = '22px Verdana';
+        x.fillText('Try upgrading your car in the shop', c.width / 2, c.height / 2 + 28);
+      }
+    }
+
+    function loop(t) {
+      update();
+      render(t);
+      requestAnimationFrame(loop);
+    }
+
+    addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (state !== 'playing') {
+        if ((k === 'r' || k === ' ') && state !== 'shop') startLevel();
+        return;
+      }
+      if (k === 'arrowleft' || k === 'a') laneIndex = Math.max(0, laneIndex - 1);
+      if (k === 'arrowright' || k === 'd') laneIndex = Math.min(lanes.length - 1, laneIndex + 1);
+    });
+
+    ui.startBtn.addEventListener('click', startLevel);
+    ui.shopBtn.addEventListener('click', showShop);
+    ui.menuExitBtn.addEventListener('click', () => { window.location.href = 'games.html'; });
+    ui.backFromShop.addEventListener('click', showMenu);
+
+    clampSave();
+    persist();
+    uiRefresh();
+    renderShop();
+    showMenu();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

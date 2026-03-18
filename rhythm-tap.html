@@ -1,0 +1,13 @@
+﻿<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg"><title>Rhythm Tap</title><style>body{margin:0;background:#080913;color:#e7e9ff;font-family:Segoe UI,Tahoma,sans-serif;display:grid;place-items:center;height:100vh}.wrap{width:min(94vw,560px)}.lane{position:relative;height:520px;border:1px solid #394172;border-radius:12px;background:linear-gradient(180deg,#13162c,#0a0c1d);overflow:hidden}.hit{position:absolute;left:0;right:0;bottom:68px;height:8px;background:#8af7c8}.note{position:absolute;left:0;right:0;height:18px;border-radius:6px;margin:0 8px}.n1{left:8px;right:75%;background:#74b9ff}.n2{left:25%;right:50%;background:#a29bfe}.n3{left:50%;right:25%;background:#55efc4}.n4{left:75%;right:8px;background:#ffeaa7}.hud{display:flex;justify-content:space-between;margin:8px 2px}.exit{position:fixed;right:12px;top:12px;background:#d84b4b;color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700}</style></head><body><a class="exit" href="games.html">Exit</a><div class="wrap"><h1>Rhythm Tap</h1><div class="hud"><span>Score: <b id="sc">0</b></span><span>Keys: D F J K</span></div><div class="lane" id="lane"><div class="hit"></div></div></div><script>
+const lane=document.getElementById('lane'),sc=document.getElementById('sc');let score=0,notes=[],t=0,spawn=0;const keys=['d','f','j','k'];
+function addNote(col){const n=document.createElement('div');n.className='note n'+(col+1);n.style.top='-20px';lane.appendChild(n);notes.push({el:n,col,y:-20,hit:false});}
+function update(){requestAnimationFrame(update);t+=1/60;spawn-=1/60;if(spawn<=0){spawn=Math.max(.3,.7-t/40);addNote(Math.floor(Math.random()*4));}
+for(let i=notes.length-1;i>=0;i--){const n=notes[i];n.y+=4.4;n.el.style.top=n.y+'px';if(n.y>540){if(!n.hit)score=Math.max(0,score-10),sc.textContent=score;n.el.remove();notes.splice(i,1);}}
+}
+addEventListener('keydown',e=>{const k=e.key.toLowerCase(),idx=keys.indexOf(k);if(idx<0)return;let best=-1,bDist=1e9;for(let i=0;i<notes.length;i++){const n=notes[i];if(n.col!==idx||n.hit)continue;const d=Math.abs((n.y+9)-444);if(d<bDist){bDist=d;best=i;}}if(best>=0&&bDist<42){notes[best].hit=true;notes[best].el.style.opacity='0.2';score+=Math.max(5,25-Math.floor(bDist/2));sc.textContent=score;}});
+update();
+</script></body></html>
+
+

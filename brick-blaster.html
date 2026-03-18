@@ -1,0 +1,24 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" type="image/jpeg" href="images/ds-logo.jpeg">
+<title>Brick Blaster</title>
+<style>body{margin:0;background:#0f1018;color:#e8ecff;font-family:Segoe UI,Tahoma,sans-serif;display:grid;place-items:center;height:100vh}.wrap{width:min(94vw,920px)}canvas{width:100%;height:520px;background:#121629;border:1px solid #334;display:block;border-radius:12px}.hud{display:flex;justify-content:space-between;margin:8px 2px}.exit{position:fixed;right:12px;top:12px;background:#d84b4b;color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:700}</style>
+</head>
+<body><a class="exit" href="games.html">Exit</a><div class="wrap"><h1>Brick Blaster</h1><div class="hud"><span>Score: <b id="score">0</b></span><span>Move: A/D or Arrows</span></div><canvas id="g" width="900" height="520"></canvas></div>
+<script>
+const c=g,x=c.getContext('2d'),s=document.getElementById('score');let score=0;const paddle={x:400,y:490,w:130,h:14,v:0};const ball={x:450,y:320,r:8,vx:4,vy:-4};const keys={};
+const rows=6,cols=12,bw=66,bh=22,offx=24,offy=34,gap=6;let bricks=[];for(let r=0;r<rows;r++)for(let col=0;col<cols;col++)bricks.push({x:offx+col*(bw+gap),y:offy+r*(bh+gap),w:bw,h:bh,hp:1,color:`hsl(${200+r*25},80%,60%)`});
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function resetBall(){ball.x=450;ball.y=320;ball.vx=(Math.random()>.5?1:-1)*4;ball.vy=-4;}
+function loop(){requestAnimationFrame(loop);paddle.v=((keys['arrowright']||keys['d'])?8:0)-((keys['arrowleft']||keys['a'])?8:0);paddle.x=Math.max(0,Math.min(c.width-paddle.w,paddle.x+paddle.v));ball.x+=ball.vx;ball.y+=ball.vy;
+if(ball.x<ball.r||ball.x>c.width-ball.r)ball.vx*=-1;if(ball.y<ball.r)ball.vy*=-1;if(ball.y>c.height+30){resetBall();score=Math.max(0,score-20);s.textContent=score;}
+if(ball.y+ball.r>paddle.y&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w&&ball.vy>0){const t=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.vx=6*t;ball.vy=-Math.abs(ball.vy);} 
+for(const b of bricks){if(!b.hp)continue;if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){b.hp=0;score+=10;s.textContent=score;ball.vy*=-1;break;}}
+if(bricks.every(b=>!b.hp)){for(const b of bricks)b.hp=1;score+=50;s.textContent=score;resetBall();}
+x.fillStyle='#111628';x.fillRect(0,0,c.width,c.height);for(const b of bricks){if(!b.hp)continue;x.fillStyle=b.color;x.fillRect(b.x,b.y,b.w,b.h);}x.fillStyle='#a8d4ff';x.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);x.beginPath();x.fillStyle='#ffd9a3';x.arc(ball.x,ball.y,ball.r,0,Math.PI*2);x.fill();}
+loop();
+</script></body></html>
+
+
